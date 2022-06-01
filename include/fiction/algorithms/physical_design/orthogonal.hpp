@@ -10,6 +10,7 @@
 #include "fiction/layouts/clocking_scheme.hpp"
 #include "fiction/networks/views/edge_color_view.hpp"
 #include "fiction/networks/views/reverse_topo_view.hpp"
+//#include "fiction/networks/views/topo_view_input_sort.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/utils/name_utils.hpp"
 #include "fiction/utils/network_utils.hpp"
@@ -149,6 +150,7 @@ coloring_container<Ntk> east_south_edge_coloring(const Ntk& ntk) noexcept
 {
     coloring_container<Ntk> ctn{ntk};
     reverse_topo_view       rtv{ntk};  // reverse topological order of nodes
+    //topo_view_input_sort    tvis{ctn};
 
 #if (PROGRESS_BARS)
     // initialize a progress bar
@@ -397,6 +399,8 @@ class orthogonal_impl
 
         // first x-pos to use for gates is 1 because PIs take up the 0th column
         tile<Lyt> latest_pos{1, 0};
+
+        //topo_view_input_sort{ntk};
 
 #if (PROGRESS_BARS)
         // initialize a progress bar

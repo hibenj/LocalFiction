@@ -99,6 +99,8 @@ TEST_CASE("Print crossing gate-level layout", "[print-gate-level-layout]")
 
     print_gate_level_layout(print_stream, layout, false, false);
 
+    std::cout<<print_stream.str();
+
     CHECK(print_stream.str() == layout_print);
 }
 
