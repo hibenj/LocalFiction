@@ -3,18 +3,17 @@
 //
 
 #include "catch.hpp"
-#include <fiction/algorithms/physical_design/ortho_new.hpp>
-//#include <fiction/algorithms/physical_design/orthogonal.hpp>
 
+#include <fiction/algorithms/physical_design/ortho_new.hpp>
+#include <fiction/algorithms/physical_design/orthogonal.hpp>
 
 #include <iostream>
-//#include <set>
+#include <set>
 
-//using namespace fiction;
+using namespace fiction;
 
 TEST_CASE("NewOrthoTest", "[ortho-new]")
 {
-    //std::cout<<idk::return_ten<int>()<<std::endl;
-    return_ten<int>();
-    //std::cout<<"hh";
+    std::cout << idk::return_ten<int>() << std::endl;
+    std::cout << "hh";
 }
