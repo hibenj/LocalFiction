@@ -1,6 +1,6 @@
 include_directories(catch2 .)
 
-set(DEFINE_TEST_HEADER test.cpp algorithms/physical_design/ortho_new.cpp networks/views/topo_view_input_sort.cpp)
+set(DEFINE_TEST_HEADER test.cpp algorithms/physical_design/ortho_new.cpp networks/views/topo_view_input_sort.cpp networks/views/input_sort_view.cpp)
 file(GLOB_RECURSE FILENAMES */*.cpp)
 list(FILTER SOURCES EXCLUDE REGEX "catch2/*")
 

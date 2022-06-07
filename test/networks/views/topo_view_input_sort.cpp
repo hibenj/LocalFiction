@@ -1,11 +1,12 @@
 //
 // Created by Hien Benjamin on 30.05.2022.
 //
-#include "fiction/networks/views/topo_view_input_sort.hpp"
+
 
 #include "catch.hpp"
 #include "mockturtle/networks/aig.hpp"
 #include "mockturtle/views/topo_view.hpp"
+#include "fiction/networks/views/topo_view_input_sort.hpp"
 
 #include <set>
 

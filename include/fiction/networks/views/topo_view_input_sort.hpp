@@ -18,8 +18,6 @@
 namespace fiction
 {
 
-//int create_ten(){int a= 10; return a;}
-
 /**
  * A variation of mockturtle::topo_view that computes the reverse topological order. Unfortunately, this view could not
  * just extend mockturtle::topo_view and override its update_topo function because the necessary data members are

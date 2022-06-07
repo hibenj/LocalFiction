@@ -182,16 +182,16 @@ Ntk mux21_network()
 {
     Ntk ntk{};
 
-    const auto x1 = ntk.create_pi();
-    const auto x2 = ntk.create_pi();
-    const auto x3 = ntk.create_pi();
+    const auto x1 = ntk.create_pi("a");
+    const auto x2 = ntk.create_pi("b");
+    const auto x3 = ntk.create_pi("c");
 
     const auto n1  = ntk.create_not(x3);
     const auto a1  = ntk.create_and(x1, n1);
     const auto a2  = ntk.create_and(x2, x3);
     const auto mux = ntk.create_or(a1, a2);
 
-    ntk.create_po(mux);
+    ntk.create_po(mux, "f");
 
     return ntk;
 }
