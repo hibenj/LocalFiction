@@ -25,7 +25,7 @@
 
 using namespace fiction;
 
-TEST_CASE("SchonWieder", "[neu]")
+TEST_CASE("Zehn", "[neu]")
 {
     CHECK(create_ten()==10);
 }
@@ -81,6 +81,81 @@ TEST_CASE("New Gate library application", "[ortho-new]")
 
     // constant input network
     check(blueprints::unbalanced_and_inv_network<mockturtle::mig_network>());
+}
+
+void check_new_stats(const orthogonal_physical_design_stats& st) noexcept
+{
+    CHECK(st.x_size > 0);
+    CHECK(st.y_size > 0);
+    CHECK(st.num_gates > 0);
+    CHECK(st.num_wires > 0);
+}
+
+template <typename Lyt, typename Ntk>
+void check_ortho_new_equiv(const Ntk& ntk)
+{
+    orthogonal_physical_design_stats stats{};
+
+    auto layout = orthogonal<Lyt>(ntk, {}, &stats);
+
+    check_new_stats(stats);
+    check_eq(ntk, layout);
+}
+
+template <typename Lyt>
+void check_ortho_new_equiv_all()
+{
+    check_ortho_new_equiv<Lyt>(blueprints::unbalanced_and_inv_network<mockturtle::aig_network>());
+    check_ortho_new_equiv<Lyt>(blueprints::maj1_network<mockturtle::aig_network>());
+    check_ortho_new_equiv<Lyt>(blueprints::maj4_network<mockturtle::aig_network>());
+    check_ortho_new_equiv<Lyt>(blueprints::se_coloring_corner_case_network<technology_network>());
+    check_ortho_new_equiv<Lyt>(blueprints::fanout_substitution_corner_case_network<technology_network>());
+    check_ortho_new_equiv<Lyt>(blueprints::nary_operation_network<technology_network>());
+    check_ortho_new_equiv<Lyt>(blueprints::clpl<technology_network>());
+
+    // constant input network
+    check_ortho_new_equiv<Lyt>(blueprints::unbalanced_and_inv_network<mockturtle::mig_network>());
+}
+
+TEST_CASE("Layout true", "[New algorithms]")
+{
+    SECTION("Cartesian layouts")
+    {
+        using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
+
+        check_ortho_new_equiv_all<gate_layout>();
+    }
+    SECTION("Hexagonal layouts")
+    {
+        SECTION("odd row")
+        {
+            using gate_layout =
+                gate_level_layout<clocked_layout<tile_based_layout<hexagonal_layout<offset::ucoord_t, odd_row_hex>>>>;
+
+            check_ortho_new_equiv_all<gate_layout>();
+        }
+        SECTION("even row")
+        {
+            using gate_layout =
+                gate_level_layout<clocked_layout<tile_based_layout<hexagonal_layout<offset::ucoord_t, even_row_hex>>>>;
+
+            check_ortho_new_equiv_all<gate_layout>();
+        }
+        SECTION("odd column")
+        {
+            using gate_layout = gate_level_layout<
+                clocked_layout<tile_based_layout<hexagonal_layout<offset::ucoord_t, odd_column_hex>>>>;
+
+            check_ortho_new_equiv_all<gate_layout>();
+        }
+        SECTION("even column")
+        {
+            using gate_layout = gate_level_layout<
+                clocked_layout<tile_based_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>>;
+
+            check_ortho_new_equiv_all<gate_layout>();
+        }
+    }
 }
 
 TEST_CASE("New Name conservation", "[ortho-new]")

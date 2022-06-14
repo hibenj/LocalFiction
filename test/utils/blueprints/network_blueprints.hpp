@@ -356,6 +356,60 @@ Ntk topolinano_network()
     return ntk;
 }
 
+template <typename Ntk>
+Ntk input_sort_view_one()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto n1  = ntk.create_not(x3);
+    const auto a1  = ntk.create_and(x1, n1);
+    const auto a2  = ntk.create_and(x2, x3);
+    const auto mux = ntk.create_or(a1, a2);
+
+    ntk.create_po(mux, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk input_sort_view_two()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto gate1 = ntk.create_and(x2, x3);
+    const auto gate2 = ntk.create_or(x2, x3);
+    const auto gate3 = ntk.create_and(gate1, x1);
+    const auto gate4 = ntk.create_and(gate3, gate2);
+
+    ntk.create_po(gate4, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk input_sort_view_three()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("d");
+    const auto gate1 = ntk.create_and(x3, x4);
+    const auto gate2 = ntk.create_or(x2, x3);
+    const auto gate3 = ntk.create_and(x1, x2);
+    const auto gate4 = ntk.create_and(gate1, gate2);
+    const auto gate5 = ntk.create_and(gate2, gate3);
+    const auto gate6 = ntk.create_and(gate4, gate5);
+
+    ntk.create_po(gate6, "f");
+
+    return ntk;
+}
+
 }  // namespace blueprints
 
 #endif  // FICTION_NETWORK_BLUEPRINTS_HPP

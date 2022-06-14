@@ -7,6 +7,7 @@
 
 #include "fiction/algorithms/physical_design/orthogonal.hpp"
 #include "fiction/networks/technology_network.hpp"
+#include "fiction/networks/views/topo_view_input_sort.hpp"
 
 int create_ten(){
     int a = 10;
@@ -23,7 +24,7 @@ class orthogonal_new_impl
 {
   public:
     orthogonal_new_impl(const Ntk& src, const orthogonal_physical_design_params& p, orthogonal_physical_design_stats& st) :
-            ntk{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<technology_network>>(fiction::input_sort_view(src))}},
+            ntk{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<technology_network>>(input_sort_view(src))}},
             ps{p},
             pst{st}
     {}
@@ -57,7 +58,7 @@ class orthogonal_new_impl
         ctn.color_ntk.foreach_node(
             [&, this](const auto& n, [[maybe_unused]] const auto i)
             {
-                //std::cout<<"no: "<<n<<std::endl;
+                //std::cout<<"n:"<<n<<" ";
                 // do not place constants
                 if (!ctn.color_ntk.is_constant(n))
                 {
@@ -65,9 +66,8 @@ class orthogonal_new_impl
                     if (ctn.color_ntk.is_pi(n))
                     {
                         node2pos[n] = layout.move_node(pi2node[n], {0, latest_pos.y});
-                        /*std::cout<<"n: "<<n<<std::endl;
-                        std::cout<<"node2pos: "<<node2pos[n]<<std::endl;
-                        std::cout<<"pi2node: "<<pi2node[n]<<std::endl;*/
+                        std::cout<<"n: "<<n<<std::endl;
+                        std::cout<<ctn.color_ntk.get_name(n)<<std::endl;
 
                         // resolve conflicting PIs
                         ctn.color_ntk.foreach_fanout(
