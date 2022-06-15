@@ -398,14 +398,15 @@ Ntk input_sort_view_three()
     const auto x2    = ntk.create_pi("b");
     const auto x3    = ntk.create_pi("c");
     const auto x4    = ntk.create_pi("d");
+    const auto x1_n  = ntk.create_not(x1);
+    const auto x2_n  = ntk.create_not(x2);
     const auto gate1 = ntk.create_and(x3, x4);
     const auto gate2 = ntk.create_or(x2, x3);
-    const auto gate3 = ntk.create_and(x1, x2);
-    const auto gate4 = ntk.create_and(gate1, gate2);
-    const auto gate5 = ntk.create_and(gate2, gate3);
-    const auto gate6 = ntk.create_and(gate4, gate5);
+    const auto gate3 = ntk.create_and(x1_n, x2_n);
+    const auto gate4 = ntk.create_and(gate1, gate3);
+    const auto gate5 = ntk.create_and(gate4, gate2);
 
-    ntk.create_po(gate6, "f");
+    ntk.create_po(gate5, "f");
 
     return ntk;
 }

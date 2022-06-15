@@ -85,6 +85,16 @@ class input_sort_view : public TopoSorted{
         mockturtle::detail::foreach_element( topo_order_input_sort.begin()+num_c, topo_order_input_sort.begin()+num_c+num_p, fn );
     }
 
+    [[nodiscard]] bool isFo_one_inv_flag() const
+    {
+        return fo_one_inv_flag;
+    }
+
+    [[nodiscard]] bool isFo_two_inv_flag() const
+    {
+        return fo_two_inv_flag;
+    }
+
     template <typename Ntk>
     void copy_and_sort(Ntk& ntk)
     {
@@ -92,7 +102,7 @@ class input_sort_view : public TopoSorted{
         mockturtle::fanout_view fov{ntk};
         bool pushed_pis = false;
         std::vector<node> wait;
-        wait.reserve(num_p);
+        //wait.reserve(num_p);
 
         ntk.foreach_node([&](const auto& nd)
                          {
@@ -109,22 +119,35 @@ class input_sort_view : public TopoSorted{
                                      topo_order_input_sort.push_back(nd);
                                  }
                                  else {
+                                     /*This is only one Fan-out*/
                                      fov.foreach_fanout(nd, [&](const auto& fo)
                                          {
-                                         if(fov.fanin_size(fo)==2)
+                                            bool all_inputs = true;
+                                            fov.foreach_fanin(fo, [&](const auto& fi){const auto fin_inp = ntk.get_node(fi); if(fov.is_ci(fin_inp)== false){all_inputs = false;}});
+                                        /*All Fan-in nodes need to be inputs*/
+                                        if(all_inputs)
                                          {
                                              fov.foreach_fanin(fo, [&](const auto& fi)
                                                                {
-                                                 if(const auto fin = ntk.get_node(fi);fov.fanout_size(fin)==2 && !fov.is_complemented(fi))
-                                                 {
-                                                     wait.insert(wait.begin(), nd);
-                                                     /*std::cout<<"this_is_my_fanin"<<fov.is_complemented(fi)<<std::endl;
-                                                     std::cout<<"this_is_my_node"<<nd<<std::endl;*/
-                                                 }
-                                                 else if (fin!=nd)
-                                                 {
-                                                     wait.push_back(nd);
-                                                 }
+                                                                   if(const auto fin = ntk.get_node(fi); fin!=nd)
+                                                                   {
+                                                                       if (fov.fanout_size(fin) == 2)
+                                                                       {
+                                                                           if (fov.is_complemented(fi))
+                                                                           {
+                                                                               fo_two_inv_flag = true;
+                                                                           }
+                                                                           wait.insert(wait.begin(), nd);
+                                                                       }
+                                                                       else
+                                                                       {
+                                                                           wait.push_back(nd);
+                                                                       }
+                                                                   }
+                                                                   else if (fov.is_complemented(fi))
+                                                                   {
+                                                                       fo_one_inv_flag = true;
+                                                                   }
                                                                });
                                          }
                                          else
@@ -155,6 +178,8 @@ class input_sort_view : public TopoSorted{
     std::vector<node> topo_order_input_sort;
     uint32_t num_p;
     uint32_t num_c = 0u;
+    bool fo_one_inv_flag = false;
+    bool fo_two_inv_flag = false;
 };
 
 }

@@ -22,12 +22,12 @@ using namespace fiction;
 
 TEST_CASE("inputsorttopoview", "[input-sort-view]")
 {
-    auto in_aig = blueprints::input_sort_view_three<mockturtle::names_view<mockturtle::aig_network>>();
+    auto in_aig = blueprints::input_sort_view_two<mockturtle::names_view<mockturtle::aig_network>>();
 
 
     /*TOPO VIEW*/
     input_sort_view isv{in_aig};
-    mockturtle::names_view fov{fanout_substitution<mockturtle::names_view<technology_network>>(fiction::input_sort_view{in_aig})};
+    //mockturtle::names_view fov{fanout_substitution<mockturtle::names_view<technology_network>>(fiction::input_sort_view{in_aig})};
 
     std::cout<<"Input Sort foreach_gate: ";
     isv.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
@@ -37,7 +37,7 @@ TEST_CASE("inputsorttopoview", "[input-sort-view]")
     isv.foreach_pi([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
 
-    std::cout<<"Fanout_substitution: ";
+    /*std::cout<<"Fanout_substitution: ";
     fov.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
 
@@ -52,7 +52,10 @@ TEST_CASE("inputsorttopoview", "[input-sort-view]")
 
     std::cout<<"Fanout_substitution: pi: ";
     fov.foreach_pi([&](const auto& node) {std::cout<<node<<" ";});
-    std::cout<<std::endl;
+    std::cout<<std::endl;*/
+
+    CHECK(isv.isFo_one_inv_flag()==false);
+    CHECK(isv.isFo_two_inv_flag()==false);
 }
 
 TEST_CASE("edgecoloris", "[input-sort-view]")
