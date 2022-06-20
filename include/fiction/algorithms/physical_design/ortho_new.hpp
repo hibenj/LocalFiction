@@ -48,6 +48,7 @@ class orthogonal_new_impl
 
         // first x-pos to use for gates is 1 because PIs take up the 0th column
         tile<Lyt> latest_pos{1, 0};
+        tile<Lyt> latest_pos_inputs{0, 0};
 
 
 #if (PROGRESS_BARS)
@@ -65,12 +66,18 @@ class orthogonal_new_impl
                     // if node is a PI, move it to its correct position
                     if (ctn.color_ntk.is_pi(n))
                     {
-                        node2pos[n] = layout.move_node(pi2node[n], {0, latest_pos.y});
-                        std::cout<<"n: "<<n<<std::endl;
-                        std::cout<<ctn.color_ntk.get_name(n)<<std::endl;
-
+                        /**NEW CODE
+                         * !!new latest_pos for inputs needed
+                         * **/
+                        /*Placing Inputs in first Column*/
+                        node2pos[n] = layout.move_node(pi2node[n], {latest_pos_inputs});
+                        //std::cout<<"n: "<<n<<std::endl;
+                        std::cout<<n<<"Pi plaziert auf"<<"X:"<<latest_pos_inputs.x<<"Y:"<<latest_pos_inputs.y<<std::endl;
+                        /**NEW CODE
+                         * !!commented out, conflicts need to be solved somewhere else
+                         * **/
                         // resolve conflicting PIs
-                        ctn.color_ntk.foreach_fanout(
+                        /*ctn.color_ntk.foreach_fanout(
                             n,
                             [&ctn, &n, &layout, &node2pos, &latest_pos](const auto& fon)
                             {
@@ -83,9 +90,12 @@ class orthogonal_new_impl
 
                                 // PIs have only one fanout
                                 return false;
-                            });
-
-                        ++latest_pos.y;
+                            });*/
+                        /**NEW CODE
+                         * !!commented out
+                         * **/
+                        //++latest_pos.y;
+                        ++latest_pos_inputs.y;
                     }
                     // if n has only one fanin
                     else if (const auto fc = fanins(ctn.color_ntk, n); fc.fanin_nodes.size() == 1)
@@ -94,19 +104,38 @@ class orthogonal_new_impl
 
                         const auto pre_t = static_cast<tile<Lyt>>(node2pos[pre]);
 
+                        /**NEW CODE
+                         * !!fan-outs from PIs are colored east
+                         * **/
+                        if(ctn.color_ntk.is_fanout(n) && ctn.color_ntk.is_pi(pre)){
+                            ctn.color_ntk.paint(mockturtle::node<Ntk>{n}, ctn.color_east);
+                            ++latest_pos.y;
+                        }
+
                         // n is colored east
                         if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_east)
                         {
                             const tile<Lyt> t{latest_pos.x, pre_t.y};
+                            std::cout<<n<<"FO oder Inv plaziert auf"<<"X:"<<latest_pos.x<<"Y:"<<pre_t.y<<std::endl;
                             node2pos[n] = connect_and_place(layout, t, ctn.color_ntk, n, pre_t);
                             ++latest_pos.x;
                         }
                         // n is colored south
                         else if (clr == ctn.color_south)
                         {
-                            const tile<Lyt> t{pre_t.x, latest_pos.y};
-                            node2pos[n] = connect_and_place(layout, t, ctn.color_ntk, n, pre_t);
-                            ++latest_pos.y;
+                            if(ctn.color_ntk.is_inv(n) && latest_pos.y<latest_pos_inputs.y){
+                                const tile<Lyt> t{pre_t.x, latest_pos_inputs.y};
+                                std::cout<<n<<"FO oder Inv plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
+                                node2pos[n] = connect_and_place(layout, t, ctn.color_ntk, n, pre_t);
+                                ++latest_pos.y;
+                            }
+                            else
+                            {
+                                const tile<Lyt> t{pre_t.x, latest_pos.y};
+                                std::cout<<n<<"FO oder Inv plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
+                                node2pos[n] = connect_and_place(layout, t, ctn.color_ntk, n, pre_t);
+                                ++latest_pos.y;
+                            }
                         }
                         else
                         {
@@ -126,7 +155,7 @@ class orthogonal_new_impl
                         // n is colored east
                         if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_east)
                         {
-                            // make sure pre1_t is the northwards tile and pre2_t is the westwards one
+                            // make sure pre1_t is the northwards tile
                             if (pre2_t.y < pre1_t.y)
                                 std::swap(pre1_t, pre2_t);
 
@@ -135,23 +164,43 @@ class orthogonal_new_impl
 
                             // each 2-input gate has one incoming bent wire
                             pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {t.x + 1, pre1_t.y}));
+                            std::cout<<n<<"And plaziert auf"<<"X:"<<t.x + 1<<"Y:"<<pre1_t.y<<std::endl;
 
                             ++latest_pos.x;
                         }
                         // n is colored south
                         else if (clr == ctn.color_south)
                         {
-                            // make sure pre1_t is the northwards tile and pre2_t is the westwards one
+                            // pre2_t is the westwards tile
                             if (pre2_t.x > pre1_t.x)
                                 std::swap(pre1_t, pre2_t);
 
-                            // use larger x position of predecessors
-                            t = {pre1_t.x, latest_pos.y};
+                            /**NEW CODE
+                             * !!new south wire option
+                             * **/
+                            // check if pre1_t is now also the northwards tile
+                            if (pre1_t.y < pre2_t.y)
+                            {
+                                // node can be placed on y position of pre2_t
+                                std::cout<<"Neue south wires für: "<<n<<std::endl;
 
-                            // each 2-input gate has one incoming bent wire
-                            pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t.y + 1}));
+                                // use larger x position of predecessors
+                                t = {pre1_t.x, pre2_t.y};
+                                std::cout<<n<<"And plaziert auf"<<"X:"<<pre1_t.x<<"Y:"<<pre2_t.y<<std::endl;
+                                latest_pos.y =pre2_t.y+1;
+                            }
+                            else
+                            {
+                                // use larger x position of predecessors
+                                t = {pre1_t.x, latest_pos.y};
+                                std::cout<<n<<"And plaziert auf"<<"X:"<<pre1_t.x<<"Y:"<<latest_pos.y<<std::endl;
+                                // each 2-input gate has one incoming bent wire
+                                pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t.y + 1}));
 
-                            ++latest_pos.y;
+                                ++latest_pos.y;
+                            }
+
+
                         }
                         // n is colored null; corner case
                         else
@@ -232,6 +281,9 @@ class orthogonal_new_impl
         pst.y_size    = layout.y() + 1;
         pst.num_gates = layout.num_gates();
         pst.num_wires = layout.num_wires();
+
+        //std::cout<<"latest X: "<<latest_pos.x<<std::endl;
+        //std::cout<<"latest Y: "<<latest_pos.y<<std::endl;
 
         return layout;
     }

@@ -408,15 +408,12 @@ class orthogonal_impl
         ctn.color_ntk.foreach_node(
             [&, this](const auto& n, [[maybe_unused]] const auto i)
             {
-                std::cout<<"n:"<<n<<" ";
                 // do not place constants
                 if (!ctn.color_ntk.is_constant(n))
                 {
-                    std::cout<<"n:"<<n<<" ";
                     // if node is a PI, move it to its correct position
                     if (ctn.color_ntk.is_pi(n))
                     {
-                        std::cout<<"n:"<<n<<" ";
                         node2pos[n] = layout.move_node(pi2node[n], {0, latest_pos.y});
 
                         // resolve conflicting PIs
@@ -582,6 +579,9 @@ class orthogonal_impl
         pst.y_size    = layout.y() + 1;
         pst.num_gates = layout.num_gates();
         pst.num_wires = layout.num_wires();
+
+        std::cout<<"latest X: "<<latest_pos.x<<std::endl;
+        std::cout<<"latest Y: "<<latest_pos.y<<std::endl;
 
         return layout;
     }

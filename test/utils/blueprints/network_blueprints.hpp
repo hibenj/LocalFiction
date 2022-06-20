@@ -364,8 +364,8 @@ Ntk input_sort_view_one()
     const auto x2    = ntk.create_pi("b");
     const auto x3    = ntk.create_pi("c");
     const auto n1  = ntk.create_not(x3);
-    const auto a1  = ntk.create_and(x1, n1);
-    const auto a2  = ntk.create_and(x2, x3);
+    const auto a1  = ntk.create_and(x1, x3);
+    const auto a2  = ntk.create_and(x2, n1);
     const auto mux = ntk.create_or(a1, a2);
 
     ntk.create_po(mux, "f");
@@ -380,12 +380,17 @@ Ntk input_sort_view_two()
     const auto x1    = ntk.create_pi("a");
     const auto x2    = ntk.create_pi("b");
     const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("d");
+    const auto n1  = ntk.create_not(x2);
+    const auto n2  = ntk.create_not(x3);
     const auto gate1 = ntk.create_and(x2, x3);
-    const auto gate2 = ntk.create_or(x2, x3);
-    const auto gate3 = ntk.create_and(gate1, x1);
-    const auto gate4 = ntk.create_and(gate3, gate2);
+    const auto gate2 = ntk.create_and(x1, n2);
+    const auto gate3 = ntk.create_and(x4, n1);
+    const auto gate4 = ntk.create_and(gate1, gate2);
+    const auto gate5 = ntk.create_and(gate2, gate3);
+    const auto gate6 = ntk.create_and(gate4, gate5);
 
-    ntk.create_po(gate4, "f");
+    ntk.create_po(gate6, "f");
 
     return ntk;
 }
@@ -407,6 +412,23 @@ Ntk input_sort_view_three()
     const auto gate5 = ntk.create_and(gate4, gate2);
 
     ntk.create_po(gate5, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk input_sort_view_four()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("d");
+    const auto gate1 = ntk.create_and(x1, x3);
+    const auto gate2 = ntk.create_and(x2, x4);
+    const auto gate4 = ntk.create_and(gate1, gate2);
+
+    ntk.create_po(gate4, "f");
 
     return ntk;
 }

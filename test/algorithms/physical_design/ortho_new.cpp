@@ -193,8 +193,16 @@ TEST_CASE("New Ortho pisort", "[ortho-new]")
 
     // PI names
     CHECK(layout.get_name(layout.pi_at(0)) == "c");  // first PI
-    CHECK(layout.get_name(layout.pi_at(1)) == "a");  // second PI
-    CHECK(layout.get_name(layout.pi_at(2)) == "b");  // third PI
+    CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
+    CHECK(layout.get_name(layout.pi_at(2)) == "a");  // third PI
+
+    //std::cout<<layout.get_node(0);
+
+    /*CHECK(layout.get_name(layout.pi_at(0)) == "a");  // first PI
+    CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
+    CHECK(layout.get_name(layout.pi_at(2)) == "c");  // third PI*/
+    /*std::cout<<"stats x"<<layout.<<std::endl;
+    std::cout<<"stats y"<<<<std::endl;*/
 
     // PO names
     CHECK(layout.get_output_name(0) == "f");

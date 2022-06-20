@@ -102,7 +102,9 @@ class input_sort_view : public TopoSorted{
         mockturtle::fanout_view fov{ntk};
         bool pushed_pis = false;
         std::vector<node> wait;
-        //wait.reserve(num_p);
+        int non_inv = 0;
+        bool all_fanins_single_inputs = false;
+        unsigned int single_input_iterator = 0;
 
         ntk.foreach_node([&](const auto& nd)
                          {
@@ -113,52 +115,103 @@ class input_sort_view : public TopoSorted{
                              }
                              else if(ntk.is_ci(nd))
                              {
-
-                                 if(fov.fanout_size(nd)==2)
+                                 /*Place High Fan-out nodes first*/
+                                 if(fov.fanout_size(nd)>=2)
                                  {
                                      topo_order_input_sort.push_back(nd);
+                                     fov.foreach_fanout(nd, [&](const auto& fo)
+                                                        {
+                                                            const auto fe = fanins(fov, fo);
+                                                            all_fanins_single_inputs = std::all_of(fe.fanin_nodes.begin(), fe.fanin_nodes.begin(), [&](const auto& fin_inp)
+                                                                                                   {
+                                                                                                       if(fin_inp!=nd && fov.is_ci(fin_inp)==1){
+                                                                                                           return fov.is_ci(fin_inp)== true;
+                                                                                                       }
+                                                                                                       else return fov.is_ci(fin_inp)== false;
+                                                                                                   });
+                                                        });
                                  }
-                                 else {
+                                 else
+                                 {
                                      /*This is only one Fan-out*/
                                      fov.foreach_fanout(nd, [&](const auto& fo)
                                          {
-                                            bool all_inputs = true;
-                                            fov.foreach_fanin(fo, [&](const auto& fi){const auto fin_inp = ntk.get_node(fi); if(fov.is_ci(fin_inp)== false){all_inputs = false;}});
-                                        /*All Fan-in nodes need to be inputs*/
-                                        if(all_inputs)
-                                         {
-                                             fov.foreach_fanin(fo, [&](const auto& fi)
-                                                               {
-                                                                   if(const auto fin = ntk.get_node(fi); fin!=nd)
-                                                                   {
-                                                                       if (fov.fanout_size(fin) == 2)
-                                                                       {
-                                                                           if (fov.is_complemented(fi))
-                                                                           {
-                                                                               fo_two_inv_flag = true;
-                                                                           }
-                                                                           wait.insert(wait.begin(), nd);
-                                                                       }
-                                                                       else
-                                                                       {
-                                                                           wait.push_back(nd);
-                                                                       }
-                                                                   }
-                                                                   else if (fov.is_complemented(fi))
-                                                                   {
-                                                                       fo_one_inv_flag = true;
-                                                                   }
-                                                               });
-                                         }
-                                         else
-                                         {
-                                             wait.push_back(nd);
-                                         }
+                                                            /*All Fan-in nodes need to be inputs*/
+                                                            bool all_inputs = true;
+                                                            fov.foreach_fanin(fo, [&](const auto& fi){const auto fin_inp = ntk.get_node(fi); if(fov.is_ci(fin_inp)== false){all_inputs = false;}});
+                                                            /*Place inputs first, which are connected to a high-fan-out input over one node*/
+                                                            if(all_inputs)
+                                                            {
+                                                                fov.foreach_fanin(fo, [&](const auto& fi)
+                                                                                  {
+                                                                                      //12 34
+                                                                                      if(const auto fin = ntk.get_node(fi); fin!=nd)
+                                                                                      {
+                                                                                          if (fov.fanout_size(fin) >= 2)
+                                                                                          {
+                                                                                              if (fov.is_complemented(fi))
+                                                                                              {
+                                                                                                  fo_two_inv_flag = true;
+                                                                                                  if (!all_fanins_single_inputs)
+                                                                                                  {
+                                                                                                      fo_two_inv_flag = false;
+                                                                                                  }
+                                                                                                  wait.insert(wait.begin()+non_inv, nd);
+                                                                                              }
+                                                                                              else
+                                                                                              {
+                                                                                                  ++non_inv;
+                                                                                                  wait.insert(wait.begin(), nd);
+                                                                                              }
+
+                                                                                          }
+                                                                                          else
+                                                                                          {
+                                                                                              if(single_input_iterator==0)
+                                                                                              {
+                                                                                                  wait.push_back(nd);
+                                                                                                  ++single_input_iterator;
+                                                                                              }
+                                                                                              else if(single_input_iterator>=1)
+                                                                                              {
+                                                                                                  if (!wait.empty())
+                                                                                                  {
+                                                                                                      const auto fo_node = fanouts(fov ,nd);
+                                                                                                      const auto fo_wait = fanouts(fov, wait.at(wait.size()-single_input_iterator));
+                                                                                                      std::cout<<"fo_node"<<fo_node[0]<<std::endl;
+
+                                                                                                      std::cout<<"fo_wait"<<fo_wait[0]<<std::endl;
+                                                                                                      if(fo_node[0]==fo_wait[0]){
+                                                                                                          wait.insert(wait.end()-single_input_iterator+1, nd);
+                                                                                                      }
+
+                                                                                                      else
+                                                                                                      {
+                                                                                                          wait.push_back(nd);
+                                                                                                      }
+                                                                                                      ++single_input_iterator;
+                                                                                                  }
+                                                                                              }
+
+                                                                                          }
+                                                                                      }
+                                                                                      else if (fov.is_complemented(fi) && fin==nd)
+                                                                                      {
+                                                                                          fo_one_inv_flag = true;
+                                                                                      }
+                                                                                  });
+                                                            }
+                                                            else
+                                                            {
+                                                                wait.push_back(nd);
+                                                            }
                                      });
                                  }
                              }
-                             else{
-                                 if(!pushed_pis){
+                             else
+                             {
+                                 if(!pushed_pis)
+                                 {
                                      for(unsigned int iter = 0; iter < wait.size(); ++iter){
                                          topo_order_input_sort.push_back(wait[iter]);
                                      }

@@ -6,6 +6,7 @@
 #define FICTION_CMD_ORTHO_HPP
 
 #include <fiction/algorithms/physical_design/orthogonal.hpp>
+#include <fiction/algorithms/physical_design/ortho_new.hpp>
 #include <fiction/traits.hpp>
 
 #include <alice/alice.hpp>
@@ -134,7 +135,7 @@ class ortho_command : public command
     void orthogonal_physical_design()
     {
         const auto perform_physical_design = [this](auto&& ntk_ptr)
-        { return fiction::orthogonal<Lyt>(*ntk_ptr, ps, &st); };
+        { return fiction::orthogonal_new<Lyt>(*ntk_ptr, ps, &st); };
 
         const auto& ntk_ptr = store<fiction::logic_network_t>().current();
 
