@@ -15,42 +15,28 @@
 #include "mockturtle/views/names_view.hpp"
 #include "mockturtle/views/topo_view.hpp"
 #include "utils/blueprints/network_blueprints.hpp"
+#include "mockturtle/views/topo_view.hpp"
 
 #include <set>
 
 using namespace fiction;
 
-TEST_CASE("Cmon", "[topo-view-input-sort]")
+TEST_CASE("Mux_tvis", "[Mux-sort-tvis]")
 {
     auto mux21 = blueprints::mux21_network<mockturtle::names_view<mockturtle::aig_network>>();
-    auto mux21_t = blueprints::mux21_network<mockturtle::names_view<technology_network>>();
 
-    topo_view_input_sort isv{mux21};
-    mockturtle::fanout_view fov{fanout_substitution<mockturtle::names_view<technology_network>>(input_sort_view{mux21})};
-    //mockturtle::fanout_view isv_t{fiction::topo_view_input_sort{mux21_t}};
+    mockturtle::fanout_view fov{fanout_substitution<mockturtle::names_view<technology_network>>(mux21)};
+    mockturtle::fanout_view isv{topo_view_input_sort{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<technology_network>>(mux21)}}};
 
-    std::cout<<"mux21: ";
-    mux21.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
+    std::cout<<"Input Sort foreach_gate: ";
+    isv.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
 
-    std::cout<<"mux21 pi: ";
-    mux21.foreach_pi([&](const auto& node) {std::cout<<node<<" ";});
+    std::cout<<"Input Sort foreach_pi: ";
+    isv.foreach_pi([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
 
-    /*std::cout<<"mux21_t: ";
-    isv_t.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
-    std::cout<<std::endl;
-
-    std::cout<<"mux21_t pi: ";
-    isv_t.foreach_pi([&](const auto& node) {std::cout<<node<<" ";});
-    std::cout<<std::endl;
-
-    std::cout<<"mux21_t input names: ";
-    std::cout<<isv_t.get_name(isv_t.pi_at(0))<<" ";
-    std::cout<<isv_t.get_name(isv_t.pi_at(1))<<" ";
-    std::cout<<isv_t.get_name(isv_t.pi_at(2))<<std::endl;*/
-
-    std::cout<<"Fanout_substitution: ";
+    /*std::cout<<"Fanout_substitution: ";
     fov.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
 
@@ -65,13 +51,42 @@ TEST_CASE("Cmon", "[topo-view-input-sort]")
 
     std::cout<<"Fanout_substitution: pi: ";
     fov.foreach_pi([&](const auto& node) {std::cout<<node<<" ";});
+    std::cout<<std::endl;*/
+    std::cout<<"Constants: ";
+    fov.foreach_node([&](const auto& node) {
+                         if(fov.is_constant(node))
+                             std::cout<<node<<" ";
+                     });
     std::cout<<std::endl;
 
-    std::cout<<"Input Sort foreach_gate: ";
-    isv.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
+    std::cout<<"PIs: ";
+    fov.foreach_pi([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
 
-    std::cout<<"Input Sort foreach_pi: ";
-    isv.foreach_pi([&](const auto& node) {std::cout<<node<<" ";});
+    std::cout<<"FOSs ";
+    fov.foreach_node([&](const auto& node) {
+                         if(fov.is_fanout(node))
+                             std::cout<<node<<" ";
+                     });
     std::cout<<std::endl;
+
+    std::cout<<"INVs ";
+    fov.foreach_node([&](const auto& node) {
+                         if(fov.is_inv(node))
+                             std::cout<<node<<" ";
+                     });
+    std::cout<<std::endl;
+
+    std::cout<<"ANDs ";
+    fov.foreach_node([&](const auto& node) {
+                         if(fov.is_and(node))
+                             std::cout<<node<<" ";
+                     });
+    std::cout<<std::endl;
+
+
+
+    CHECK(isv.isFo_one_inv_flag()==false);
+    CHECK(isv.isFo_two_inv_flag()==false);
+
 }

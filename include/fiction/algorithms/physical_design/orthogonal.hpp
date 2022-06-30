@@ -488,17 +488,31 @@ class orthogonal_impl
                         // n is colored south
                         else if (clr == ctn.color_south)
                         {
-                            // make sure pre1_t is the northwards tile and pre2_t is the westwards one
+                            // pre2_t is the westwards tile
                             if (pre2_t.x > pre1_t.x)
                                 std::swap(pre1_t, pre2_t);
 
-                            // use larger x position of predecessors
-                            t = {pre1_t.x, latest_pos.y};
+                            /**NEW CODE
+                             * !!new south wire option
+                             * **/
+                            // check if pre1_t is now also the northwards tile
+                            if (pre1_t.y < pre2_t.y)
+                            {
+                                // node can be placed on y position of pre2_t
 
-                            // each 2-input gate has one incoming bent wire
-                            pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t.y + 1}));
+                                // use larger x position of predecessors
+                                t = {pre1_t.x, pre2_t.y};
+                                latest_pos.y =pre2_t.y+1;
+                            }
+                            else
+                            {
+                                // use larger x position of predecessors
+                                t = {pre1_t.x, latest_pos.y};
+                                // each 2-input gate has one incoming bent wire
+                                pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t.y + 1}));
 
-                            ++latest_pos.y;
+                                ++latest_pos.y;
+                            }
                         }
                         // n is colored null; corner case
                         else

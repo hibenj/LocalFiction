@@ -433,6 +433,73 @@ Ntk input_sort_view_four()
     return ntk;
 }
 
+template <typename Ntk>
+Ntk input_sort_view_bca()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto n2  = ntk.create_not(x2);
+    const auto gate1 = ntk.create_and(x1, n2);
+    const auto gate2 = ntk.create_and(x2, x3);
+    const auto gate4 = ntk.create_and(gate1, gate2);
+
+    ntk.create_po(gate4, "f");
+
+    return ntk;
+}
+template <typename Ntk>
+Ntk fanout_inv_blc()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto n1  = ntk.create_not(x3);
+    const auto a1  = ntk.create_and(x1, n1);
+    const auto a2  = ntk.create_and(x2, n1);
+    const auto a3 = ntk.create_and(a1, a2);
+
+    ntk.create_po(a3, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk TESTa()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+
+    const auto a1 = ntk.create_and(x1, x2);
+
+    ntk.create_po(a1, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk TESTb()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("d");
+
+    const auto a1 = ntk.create_and(x1, x2);
+    const auto a2 = ntk.create_and(x3, x4);
+    const auto a3 = ntk.create_and(a1, x3);
+    const auto a4 = ntk.create_and(a2, x2);
+    const auto a5 = ntk.create_and(a3, a4);
+
+    ntk.create_po(a5, "f");
+
+    return ntk;
+}
+
 }  // namespace blueprints
 
 #endif  // FICTION_NETWORK_BLUEPRINTS_HPP

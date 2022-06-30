@@ -28,27 +28,28 @@ namespace fiction{
 class input_sort_view
 {};*/
 
-template<typename TopoSorted>
-class input_sort_view : public TopoSorted{
+template<typename Ntk>
+class input_sort_view : public Ntk{
   public:
-    using storage = typename TopoSorted::storage;
-    using node = typename TopoSorted::node;
-    using signal = typename TopoSorted::signal;
+    using storage = typename Ntk::storage;
+    using node = typename Ntk::node;
+    using signal = typename Ntk::signal;
 
-    explicit input_sort_view(TopoSorted const& ts) : TopoSorted(ts), num_p{ts.num_pis()}
+    explicit input_sort_view(Ntk const& ntk) : Ntk(ntk), num_p{ntk.num_pis()}
     {
-        static_assert(mockturtle::is_network_type_v<TopoSorted>, "Ntk is not a network type");
-        static_assert(mockturtle::has_size_v<TopoSorted>, "Ntk does not implement the size function");
-        static_assert(mockturtle::has_get_constant_v<TopoSorted>, "Ntk does not implement the get_constant function");
-        static_assert(mockturtle::has_foreach_pi_v<TopoSorted>, "Ntk does not implement the foreach_pi function");
-        static_assert(mockturtle::has_foreach_po_v<TopoSorted>, "Ntk does not implement the foreach_po function");
-        static_assert(mockturtle::has_foreach_fanin_v<TopoSorted>, "Ntk does not implement the foreach_fanin function");
-        static_assert(mockturtle::has_incr_trav_id_v<TopoSorted>, "Ntk does not implement the incr_trav_id function");
-        static_assert(mockturtle::has_set_visited_v<TopoSorted>, "Ntk does not implement the set_visited function");
-        static_assert(mockturtle::has_trav_id_v<TopoSorted>, "Ntk does not implement the trav_id function");
-        static_assert(mockturtle::has_visited_v<TopoSorted>, "Ntk does not implement the visited function");
+        static_assert(mockturtle::is_network_type_v<Ntk>, "Ntk is not a network type");
+        static_assert(mockturtle::has_size_v<Ntk>, "Ntk does not implement the size function");
+        static_assert(mockturtle::has_get_constant_v<Ntk>, "Ntk does not implement the get_constant function");
+        static_assert(mockturtle::has_foreach_pi_v<Ntk>, "Ntk does not implement the foreach_pi function");
+        static_assert(mockturtle::has_foreach_po_v<Ntk>, "Ntk does not implement the foreach_po function");
+        static_assert(mockturtle::has_foreach_fanin_v<Ntk>, "Ntk does not implement the foreach_fanin function");
+        static_assert(mockturtle::has_incr_trav_id_v<Ntk>, "Ntk does not implement the incr_trav_id function");
+        static_assert(mockturtle::has_set_visited_v<Ntk>, "Ntk does not implement the set_visited function");
+        static_assert(mockturtle::has_trav_id_v<Ntk>, "Ntk does not implement the trav_id function");
+        static_assert(mockturtle::has_visited_v<Ntk>, "Ntk does not implement the visited function");
+        static_assert(mockturtle::has_foreach_fanout_v<Ntk>, "Ntk does not implement the has_foreach_fanout function");
 
-        copy_and_sort(ts);
+        copy_and_sort(ntk);
     }
 
     /*! \brief Reimplementation of `node_to_index`. */
@@ -95,123 +96,133 @@ class input_sort_view : public TopoSorted{
         return fo_two_inv_flag;
     }
 
-    template <typename Ntk>
-    void copy_and_sort(Ntk& ntk)
+    void copy_and_sort(Ntk const& ntk)
     {
+        //std::cout << typeid(ntk).name() << std::endl;
         topo_order_input_sort.reserve(ntk.size());
-        mockturtle::fanout_view fov{ntk};
         bool pushed_pis = false;
-        std::vector<node> wait;
         int non_inv = 0;
         bool all_fanins_single_inputs = false;
         unsigned int single_input_iterator = 0;
+        this->incr_trav_id();
 
         ntk.foreach_node([&](const auto& nd)
                          {
                              if(ntk.is_constant(nd))
                              {
                                  topo_order_input_sort.push_back(nd);
+                                 this->set_visited(nd, this->trav_id());
                                  ++num_c;
                              }
                              else if(ntk.is_ci(nd))
                              {
-                                 /*Place High Fan-out nodes first*/
-                                 if(fov.fanout_size(nd)>=2)
+                                 if (!this->visited(nd) == this->trav_id())
                                  {
-                                     topo_order_input_sort.push_back(nd);
-                                     fov.foreach_fanout(nd, [&](const auto& fo)
-                                                        {
-                                                            const auto fe = fanins(fov, fo);
-                                                            all_fanins_single_inputs = std::all_of(fe.fanin_nodes.begin(), fe.fanin_nodes.begin(), [&](const auto& fin_inp)
-                                                                                                   {
-                                                                                                       if(fin_inp!=nd && fov.is_ci(fin_inp)==1){
-                                                                                                           return fov.is_ci(fin_inp)== true;
-                                                                                                       }
-                                                                                                       else return fov.is_ci(fin_inp)== false;
-                                                                                                   });
-                                                        });
-                                 }
-                                 else
-                                 {
-                                     /*This is only one Fan-out*/
-                                     fov.foreach_fanout(nd, [&](const auto& fo)
+                                     //std::cout<<"TravID: "<<this->trav_id()<<std::endl;
+                                     /*Place connected input-nodes first*/
+                                     ntk.foreach_fanout(
+                                         nd,
+                                         [&](const auto& fon)
                                          {
-                                                            /*All Fan-in nodes need to be inputs*/
-                                                            bool all_inputs = true;
-                                                            fov.foreach_fanin(fo, [&](const auto& fi){const auto fin_inp = ntk.get_node(fi); if(fov.is_ci(fin_inp)== false){all_inputs = false;}});
-                                                            /*Place inputs first, which are connected to a high-fan-out input over one node*/
-                                                            if(all_inputs)
-                                                            {
-                                                                fov.foreach_fanin(fo, [&](const auto& fi)
-                                                                                  {
-                                                                                      //12 34
-                                                                                      if(const auto fin = ntk.get_node(fi); fin!=nd)
-                                                                                      {
-                                                                                          if (fov.fanout_size(fin) >= 2)
-                                                                                          {
-                                                                                              if (fov.is_complemented(fi))
-                                                                                              {
-                                                                                                  fo_two_inv_flag = true;
-                                                                                                  if (!all_fanins_single_inputs)
-                                                                                                  {
-                                                                                                      fo_two_inv_flag = false;
-                                                                                                  }
-                                                                                                  wait.insert(wait.begin()+non_inv, nd);
-                                                                                              }
-                                                                                              else
-                                                                                              {
-                                                                                                  ++non_inv;
-                                                                                                  wait.insert(wait.begin(), nd);
-                                                                                              }
+                                             /*Ignore Inverters*/
+                                             output_node.clear();
+                                             output_node.push_back(fon);
+                                             if (ntk.is_inv(fon))
+                                             {
+                                                 /*Inverter Flag*/
+                                                 ntk.foreach_fanout(fon,
+                                                                    [&](const auto& fon_inv) { output_node[0] = fon_inv; });
+                                             }
+                                             if (ntk.is_fanout(output_node[0])){
+                                                 node safe_node = output_node[0];
+                                                 output_node.clear();
+                                                 ntk.foreach_fanout(safe_node,
+                                                                    [&](const auto& fon) {
+                                                                        if (ntk.is_inv(fon))
+                                                                        {
+                                                                            /*Inverter Flag*/
+                                                                            ntk.foreach_fanout(fon,
+                                                                                               [&](const auto& fon_inv) { output_node.push_back(fon_inv); });
+                                                                        }else
+                                                                            output_node.insert(output_node.begin(), fon);
+                                                                    });
+                                             }
 
-                                                                                          }
-                                                                                          else
-                                                                                          {
-                                                                                              if(single_input_iterator==0)
-                                                                                              {
-                                                                                                  wait.push_back(nd);
-                                                                                                  ++single_input_iterator;
-                                                                                              }
-                                                                                              else if(single_input_iterator>=1)
-                                                                                              {
-                                                                                                  if (!wait.empty())
-                                                                                                  {
-                                                                                                      const auto fo_node = fanouts(fov ,nd);
-                                                                                                      const auto fo_wait = fanouts(fov, wait.at(wait.size()-single_input_iterator));
-                                                                                                      std::cout<<"fo_node"<<fo_node[0]<<std::endl;
+                                             /*The Fan-out has to be connected to 1.Fan-out nodes of Inputs or 2.Inputs*/
+                                             /*Has to be rewritten for Inputs with Fan-outs higher than two*/
+                                             bool all_inputs = false;
+                                             for(int i = 0; i <output_node.size(); ++i)
+                                             {
+                                                 ntk.foreach_fanin(
+                                                     output_node[i],
+                                                     [&](const auto& fi)
+                                                     {
+                                                         auto fin_inp = ntk.get_node(fi);
+                                                         /*Ignore Inverters*/
+                                                         if (ntk.is_inv(fin_inp))
+                                                         {
+                                                             const auto fis_inv = fanins(ntk, fin_inp);
+                                                             fin_inp            = fis_inv.fanin_nodes[0];
+                                                         }
+                                                         /*1*/
+                                                         if (ntk.fanout_size(fin_inp) >= 2)
+                                                         {
+                                                             ntk.foreach_fanin(
+                                                                 fin_inp,
+                                                                 [&](const auto& fin)
+                                                                 {
+                                                                     auto fin_inp_sec = ntk.get_node(fin);
+                                                                     /*Ignore Inverters*/
+                                                                     if (ntk.is_inv(fin_inp_sec))
+                                                                     {
+                                                                         const auto fis_inv = fanins(ntk, fin_inp_sec);
+                                                                         fin_inp_sec        = fis_inv.fanin_nodes[0];
+                                                                     }
+                                                                     if (ntk.is_ci(fin_inp_sec) == true &&
+                                                                         fin_inp_sec != nd)
+                                                                     {
+                                                                         all_inputs = true;
+                                                                         std::cout
+                                                                             << "Node: " << nd
+                                                                             << std::endl;
+                                                                         std::cout
+                                                                             << "Connected Fan-out PI: " << fin_inp_sec
+                                                                             << std::endl;
+                                                                         if (!this->visited(nd) == this->trav_id()){
+                                                                             wait_fo.insert(wait_fo.begin(), nd);
+                                                                             this->set_visited(nd, this->trav_id());
+                                                                         }
 
-                                                                                                      std::cout<<"fo_wait"<<fo_wait[0]<<std::endl;
-                                                                                                      if(fo_node[0]==fo_wait[0]){
-                                                                                                          wait.insert(wait.end()-single_input_iterator+1, nd);
-                                                                                                      }
+                                                                         if (!this->visited(fin_inp_sec) == this->trav_id()){
+                                                                             wait_fo.insert(wait_fo.begin(), fin_inp_sec);
+                                                                             this->set_visited(fin_inp_sec, this->trav_id());
+                                                                         }
 
-                                                                                                      else
-                                                                                                      {
-                                                                                                          wait.push_back(nd);
-                                                                                                      }
-                                                                                                      ++single_input_iterator;
-                                                                                                  }
-                                                                                              }
-
-                                                                                          }
-                                                                                      }
-                                                                                      else if (fov.is_complemented(fi) && fin==nd)
-                                                                                      {
-                                                                                          fo_one_inv_flag = true;
-                                                                                      }
-                                                                                  });
-                                                            }
-                                                            else
-                                                            {
-                                                                wait.push_back(nd);
-                                                            }
-                                     });
+                                                                     }
+                                                                 });
+                                                         }
+                                                         /*2*/
+                                                         else if (ntk.is_ci(fin_inp) == true && fin_inp != nd)
+                                                         {
+                                                             std::cout
+                                                                 << "Node: " << nd
+                                                                 << std::endl;
+                                                             std::cout << "Connected to normal PI: " << fin_inp
+                                                                       << std::endl;
+                                                             all_inputs = true;
+                                                         }
+                                                     });
+                                             }
+                                         });
                                  }
                              }
                              else
                              {
                                  if(!pushed_pis)
                                  {
+                                     for(unsigned int iter = 0; iter < wait_fo.size(); ++iter){
+                                         topo_order_input_sort.push_back(wait_fo[iter]);
+                                     }
                                      for(unsigned int iter = 0; iter < wait.size(); ++iter){
                                          topo_order_input_sort.push_back(wait[iter]);
                                      }
@@ -233,6 +244,9 @@ class input_sort_view : public TopoSorted{
     uint32_t num_c = 0u;
     bool fo_one_inv_flag = false;
     bool fo_two_inv_flag = false;
+    std::vector<node> output_node;
+    std::vector<node> wait_fo;
+    std::vector<node> wait;
 };
 
 }

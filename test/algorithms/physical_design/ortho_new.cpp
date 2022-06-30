@@ -179,7 +179,7 @@ TEST_CASE("New Name conservation", "[ortho-new]")
     CHECK(layout.get_output_name(0) == "f");
 }
 
-TEST_CASE("New Ortho pisort", "[ortho-new]")
+TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
@@ -195,6 +195,35 @@ TEST_CASE("New Ortho pisort", "[ortho-new]")
     CHECK(layout.get_name(layout.pi_at(0)) == "c");  // first PI
     CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
     CHECK(layout.get_name(layout.pi_at(2)) == "a");  // third PI
+
+    //std::cout<<layout.get_node(0);
+
+    /*CHECK(layout.get_name(layout.pi_at(0)) == "a");  // first PI
+    CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
+    CHECK(layout.get_name(layout.pi_at(2)) == "c");  // third PI*/
+    /*std::cout<<"stats x"<<layout.<<std::endl;
+    std::cout<<"stats y"<<<<std::endl;*/
+
+    // PO names
+    CHECK(layout.get_output_name(0) == "f");
+}
+
+TEST_CASE("New Ortho testing", "[ortho-testing]")
+{
+    using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
+
+    auto mux21 = blueprints::TESTb<mockturtle::names_view<mockturtle::aig_network>>();
+    mux21.set_network_name("mux21");
+
+    const auto layout = orthogonal_new<gate_layout>(mux21);
+
+    // network name
+    CHECK(layout.get_layout_name() == "mux21");
+
+    // PI names
+    //CHECK(layout.get_name(layout.pi_at(0)) == "c");  // first PI
+    //CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
+    //CHECK(layout.get_name(layout.pi_at(2)) == "a");  // third PI
 
     //std::cout<<layout.get_node(0);
 
