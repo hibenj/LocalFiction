@@ -33,7 +33,7 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
     bool node_fo = false;
     bool inv_flag = false;
 
-    std::vector<mockturtle::node<Ntk>> new_output_node;
+    std::vector<typename Ntk::node> new_output_node;
     ntk.foreach_pi(
         [&](const auto& nd){
             ntk.foreach_fanout(
@@ -285,6 +285,9 @@ template <typename Lyt, typename Ntk, typename Ps>
 aspect_ratio<Lyt> determine_new_layout_size(const Ntk &ntk, const Ps& ps) noexcept
 {
     tile<Lyt> latest_pos{1, 0};
+    if(ntk.isFo_inv_flag()){
+        ++latest_pos.x;
+    }
     tile<Lyt> latest_pos_inputs{0, 0};
     const auto ctn = new_east_south_edge_coloring(ntk);
 
@@ -326,7 +329,17 @@ aspect_ratio<Lyt> determine_new_layout_size(const Ntk &ntk, const Ps& ps) noexce
             // n is colored east
             if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_east)
             {
-                const tile<Lyt> t{latest_pos.x, pre_t.y};
+                auto insert_position = latest_pos.x;
+                if(ntk.isFo_inv_flag() && ntk.is_inv(n) && ntk.is_pi(pre)){
+                    insert_position = 1;
+                    --latest_pos.x;
+                    std::cout<<"INV";
+                }
+                if(ctn.color_ntk.is_fanout(n) && ctn.color_ntk.is_pi(pre))
+                {
+                    ++latest_pos.y;
+                }
+                const tile<Lyt> t{insert_position, pre_t.y};
                 node2pos[n] = connect_and_place(layout, t, ctn.color_ntk, n, pre_t);
                 ++latest_pos.x;
             }
@@ -492,7 +505,12 @@ class orthogonal_new_impl
 
         // first x-pos to use for gates is 1 because PIs take up the 0th column
         tile<Lyt> latest_pos{1, 0};
+        if(ctn.color_ntk.isFo_inv_flag()){
+            ++latest_pos.x;
+        }
         tile<Lyt> latest_pos_inputs{0, 0};
+
+        std::cout<<"Inverter_Flag"<<ctn.color_ntk.isFo_inv_flag()<<std::endl;
 
 
 #if (PROGRESS_BARS)
@@ -537,7 +555,19 @@ class orthogonal_new_impl
                         // n is colored east
                         if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_east)
                         {
-                            const tile<Lyt> t{latest_pos.x, pre_t.y};
+                            auto insert_position = latest_pos.x;
+                            if(ntk.isFo_inv_flag() && ntk.is_inv(n) && ntk.is_pi(pre)){
+                                insert_position = 1;
+                                --latest_pos.x;
+                                std::cout<<"INV";
+                            }
+                            /*oder ist inverter und nächster knoten ist pi*/
+                            if(ctn.color_ntk.is_fanout(n) && ctn.color_ntk.is_pi(pre))
+                            {
+                                ++latest_pos.y;
+                            }
+                            const tile<Lyt> t{insert_position, pre_t.y};
+
                             std::cout<<n<<"FO oder Inv plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
                             std::cout<<n<<"Pre"<<pre<<std::endl;
                             std::cout<<n<<"color: "<<"east"<<std::endl;

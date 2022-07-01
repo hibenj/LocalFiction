@@ -357,6 +357,27 @@ Ntk topolinano_network()
 }
 
 template <typename Ntk>
+Ntk xnor2()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    /*const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("d");*/
+
+    const auto n1    = ntk.create_not(x1);
+    const auto a1  = ntk.create_and(x1, n1);
+    const auto n2    = ntk.create_not(x2);
+    const auto a2  = ntk.create_and(x2, n2);
+    const auto a3 = ntk.create_or(a1, a2);
+    const auto a4 = ntk.create_not(a3);
+
+    ntk.create_po(a4, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
 Ntk input_sort_view_one()
 {
     Ntk ntk{};
@@ -488,8 +509,9 @@ Ntk TESTb()
     const auto x2    = ntk.create_pi("b");
     const auto x3    = ntk.create_pi("c");
     const auto x4    = ntk.create_pi("d");
+    const auto n1    = ntk.create_not(x1);
 
-    const auto a1 = ntk.create_and(x1, x2);
+    const auto a1 = ntk.create_and(n1, x2);
     const auto a2 = ntk.create_and(x3, x4);
     const auto a3 = ntk.create_and(a1, x3);
     const auto a4 = ntk.create_and(a2, x2);

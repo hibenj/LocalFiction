@@ -86,7 +86,6 @@ TEST_CASE("Mux_tvis", "[Mux-sort-tvis]")
 
 
 
-    CHECK(isv.isFo_one_inv_flag()==false);
-    CHECK(isv.isFo_two_inv_flag()==false);
+    CHECK(isv.isFo_inv_flag()==true);
 
 }

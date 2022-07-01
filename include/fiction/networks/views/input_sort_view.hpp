@@ -86,14 +86,9 @@ class input_sort_view : public Ntk{
         mockturtle::detail::foreach_element( topo_order_input_sort.begin()+num_c, topo_order_input_sort.begin()+num_c+num_p, fn );
     }
 
-    [[nodiscard]] bool isFo_one_inv_flag() const
+    [[nodiscard]] bool isFo_inv_flag() const
     {
-        return fo_one_inv_flag;
-    }
-
-    [[nodiscard]] bool isFo_two_inv_flag() const
-    {
-        return fo_two_inv_flag;
+        return fo_inv_flag;
     }
 
     void copy_and_sort(Ntk const& ntk)
@@ -101,9 +96,6 @@ class input_sort_view : public Ntk{
         //std::cout << typeid(ntk).name() << std::endl;
         topo_order_input_sort.reserve(ntk.size());
         bool pushed_pis = false;
-        int non_inv = 0;
-        bool all_fanins_single_inputs = false;
-        unsigned int single_input_iterator = 0;
         this->incr_trav_id();
 
         ntk.foreach_node([&](const auto& nd)
@@ -124,16 +116,20 @@ class input_sort_view : public Ntk{
                                          nd,
                                          [&](const auto& fon)
                                          {
+                                             bool is_fan_out = false;
                                              /*Ignore Inverters*/
                                              output_node.clear();
                                              output_node.push_back(fon);
                                              if (ntk.is_inv(fon))
                                              {
                                                  /*Inverter Flag*/
+                                                 fo_inv_flag=true;
                                                  ntk.foreach_fanout(fon,
                                                                     [&](const auto& fon_inv) { output_node[0] = fon_inv; });
                                              }
                                              if (ntk.is_fanout(output_node[0])){
+                                                 is_fan_out = true;
+                                                 topo_order_input_sort.push_back(nd);
                                                  node safe_node = output_node[0];
                                                  output_node.clear();
                                                  ntk.foreach_fanout(safe_node,
@@ -142,9 +138,9 @@ class input_sort_view : public Ntk{
                                                                         {
                                                                             /*Inverter Flag*/
                                                                             ntk.foreach_fanout(fon,
-                                                                                               [&](const auto& fon_inv) { output_node.push_back(fon_inv); });
+                                                                                               [&](const auto& fon_inv) { output_node.insert(output_node.begin(), fon_inv);});
                                                                         }else
-                                                                            output_node.insert(output_node.begin(), fon);
+                                                                            output_node.push_back(fon);
                                                                     });
                                              }
 
@@ -182,33 +178,31 @@ class input_sort_view : public Ntk{
                                                                          fin_inp_sec != nd)
                                                                      {
                                                                          all_inputs = true;
-                                                                         std::cout
-                                                                             << "Node: " << nd
-                                                                             << std::endl;
-                                                                         std::cout
-                                                                             << "Connected Fan-out PI: " << fin_inp_sec
-                                                                             << std::endl;
-                                                                         if (!this->visited(nd) == this->trav_id()){
-                                                                             wait_fo.insert(wait_fo.begin(), nd);
-                                                                             this->set_visited(nd, this->trav_id());
-                                                                         }
-
-                                                                         if (!this->visited(fin_inp_sec) == this->trav_id()){
-                                                                             wait_fo.insert(wait_fo.begin(), fin_inp_sec);
-                                                                             this->set_visited(fin_inp_sec, this->trav_id());
-                                                                         }
-
                                                                      }
                                                                  });
                                                          }
                                                          /*2*/
                                                          else if (ntk.is_ci(fin_inp) == true && fin_inp != nd)
                                                          {
-                                                             std::cout
-                                                                 << "Node: " << nd
-                                                                 << std::endl;
-                                                             std::cout << "Connected to normal PI: " << fin_inp
-                                                                       << std::endl;
+                                                             if(is_fan_out)
+                                                             {
+                                                                 if (!this->visited(fin_inp) == this->trav_id()){
+                                                                     wait.insert(wait.begin(), fin_inp);
+                                                                     this->set_visited(fin_inp, this->trav_id());
+                                                                 }
+                                                             }
+                                                             else{
+                                                                 if (!this->visited(nd) == this->trav_id()){
+                                                                     wait.push_back(nd);
+                                                                     this->set_visited(nd, this->trav_id());
+                                                                 }
+                                                                 if (!this->visited(fin_inp) == this->trav_id()){
+                                                                     wait.push_back(fin_inp);
+                                                                     this->set_visited(fin_inp, this->trav_id());
+                                                                 }
+                                                             }
+
+
                                                              all_inputs = true;
                                                          }
                                                      });
@@ -220,9 +214,6 @@ class input_sort_view : public Ntk{
                              {
                                  if(!pushed_pis)
                                  {
-                                     for(unsigned int iter = 0; iter < wait_fo.size(); ++iter){
-                                         topo_order_input_sort.push_back(wait_fo[iter]);
-                                     }
                                      for(unsigned int iter = 0; iter < wait.size(); ++iter){
                                          topo_order_input_sort.push_back(wait[iter]);
                                      }
@@ -242,10 +233,8 @@ class input_sort_view : public Ntk{
     std::vector<node> topo_order_input_sort;
     uint32_t num_p;
     uint32_t num_c = 0u;
-    bool fo_one_inv_flag = false;
-    bool fo_two_inv_flag = false;
+    bool fo_inv_flag = false;
     std::vector<node> output_node;
-    std::vector<node> wait_fo;
     std::vector<node> wait;
 };
 

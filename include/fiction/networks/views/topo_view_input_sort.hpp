@@ -171,14 +171,9 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
         return start_signal ? 1 : Ntk::num_pos();
     }
 
-    [[nodiscard]] bool isFo_one_inv_flag() const
+    [[nodiscard]] bool isFo_inv_flag() const
     {
-        return fo_one_inv_flag;
-    }
-
-    [[nodiscard]] bool isFo_two_inv_flag() const
-    {
-        return fo_two_inv_flag;
+        return fo_inv_flag;
     }
 
     void update_topo()
@@ -285,7 +280,7 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
 
             this->set_visited(n, this->trav_id());
 
-            auto it = find(topo_wait.begin(), topo_wait.end(), n);
+            /*auto it = find(topo_wait.begin(), topo_wait.end(), n);
             int index;
             // If element was found
             if (it != topo_wait.end())
@@ -299,187 +294,149 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                 // If the element is not
                 // present in the vector
                 std::cout << "-1" << std::endl;
-            }
+            }*/
 
             /*Push the outputs of a finally pushed node to the queue*/
-            my_ntk.foreach_fanout(n, [&](auto ok){
-                                   if(this->visited(ok) != tid){
-                                       topo_wait.push_back(ok);
+            my_ntk.foreach_fanout(n, [&](auto fo){
+                                   if(this->visited(fo) != tid){
+                                       topo_wait.push_back(fo);
                                    }
-                                   this->set_visited(ok, tid);
-                                   const auto fis = fanins(my_ntk, ok);
+                                   this->set_visited(fo, tid);
+                                   /*const auto fis = fanins(my_ntk, fo);
                                    my_bool=false;
                                    my_bool = std::all_of(fis.fanin_nodes.begin(), fis.fanin_nodes.end(), [&](const auto& fin_inp)
                                                                 {return this->visited(fin_inp) == this->trav_id();});
                                    if (my_bool){
-                                       next_node = ok;
-                                   }
+                                       next_node = fo;
+                                   }*/
                                });
 
 
-            topo_wait.erase(topo_wait.begin()+index);
+            //topo_wait.erase(topo_wait.begin()+index);
+            topo_wait.erase(topo_wait.begin()+push_iter);
             push_iter=0;
-        }else{
+        }
+        else
+        {
             ++push_iter;
         }
 
         if(!topo_wait.empty()){
-            if(my_bool){
+            /*if(my_bool){
                 create_rest_topo(next_node, tid);
-            }
-            else create_rest_topo(topo_wait[push_iter], tid);
+            }*/
+            create_rest_topo(topo_wait[push_iter], tid);
         }
     }
 
     void input_sort(node const& n){
 
         /*Place High Fan-out nodes first*/
-        my_ntk.foreach_fanout(n, [&](const auto& fon){
-                               if(my_ntk.is_fanout(fon))
-                               {
-                                   topo_order.push_back(n);
-                                   this->set_visited(n, this->trav_id());
-                                   /*Check if the fan-in-nodes on the high fan-out input*/
-                                   my_ntk.foreach_fanout(fon, [&](const auto& fo)
+        my_ntk.foreach_fanout(n, [&](const auto& fon)
+                                  {
+                                      bool is_fan_out = false;
+                                      /*Ignore Inverters*/
+                                      output_node.clear();
+                                      output_node.push_back(fon);
+                                      if (my_ntk.is_inv(fon))
+                                      {
+                                          /*Inverter Flag*/
+                                          fo_inv_flag=true;
+                                          my_ntk.foreach_fanout(fon,
+                                                             [&](const auto& fon_inv) { output_node[0] = fon_inv; });
+                                      }
+                                      if (my_ntk.is_fanout(output_node[0])){
+                                          is_fan_out = true;
+                                          topo_order.push_back(n);
+                                          this->set_visited(n, this->trav_id());
+                                          node safe_node = output_node[0];
+                                          output_node.clear();
+                                          my_ntk.foreach_fanout(safe_node,
+                                                             [&](const auto& fon) {
+                                                                 if (my_ntk.is_inv(fon))
+                                                                 {
+                                                                     /*Inverter Flag*/
+                                                                     my_ntk.foreach_fanout(fon,
+                                                                                        [&](const auto& fon_inv) { output_node.insert(output_node.begin(), fon_inv);});
+                                                                 }else
+                                                                     output_node.push_back(fon);
+                                                             });
+                                      }
+
+                                      /*The Fan-out has to be connected to 1.Fan-out nodes of Inputs or 2.Inputs*/
+                                      /*Has to be rewritten for Inputs with Fan-outs higher than two*/
+                                      bool all_inputs = false;
+                                      for(int i = 0; i <output_node.size(); ++i)
+                                      {
+                                          my_ntk.foreach_fanin(
+                                              output_node[i],
+                                              [&](const auto& fi)
+                                              {
+                                                  auto fin_inp = my_ntk.get_node(fi);
+                                                  /*Ignore Inverters*/
+                                                  if (my_ntk.is_inv(fin_inp))
+                                                  {
+                                                      const auto fis_inv = fanins(my_ntk, fin_inp);
+                                                      fin_inp            = fis_inv.fanin_nodes[0];
+                                                  }
+                                                  /*1*/
+                                                  if (my_ntk.fanout_size(fin_inp) >= 2)
+                                                  {
+                                                      my_ntk.foreach_fanin(
+                                                          fin_inp,
+                                                          [&](const auto& fin)
+                                                          {
+                                                              auto fin_inp_sec = my_ntk.get_node(fin);
+                                                              /*Ignore Inverters*/
+                                                              if (my_ntk.is_inv(fin_inp_sec))
+                                                              {
+                                                                  const auto fis_inv = fanins(my_ntk, fin_inp_sec);
+                                                                  fin_inp_sec        = fis_inv.fanin_nodes[0];
+                                                              }
+                                                              if (my_ntk.is_ci(fin_inp_sec) == true &&
+                                                                  fin_inp_sec != n)
+                                                              {
+                                                                  all_inputs = true;
+                                                              }
+                                                          });
+                                                  }
+                                                  /*2*/
+                                                  else if (my_ntk.is_ci(fin_inp) == true && fin_inp != n)
+                                                  {
+                                                      if(is_fan_out)
                                                       {
-                                                          const auto fe = fanins(my_ntk, fo);
-                                                          all_fanins_single_inputs = std::all_of(fe.fanin_nodes.begin(), fe.fanin_nodes.begin(), [&](const auto& fin_inp)
-                                                                                                 {
-                                                                                                     /*FEHLER?*/
-                                                                                                     if (fin_inp!=fon){
-                                                                                                         return  my_ntk.is_ci(fin_inp);
-                                                                                                     } else return true;
+                                                              wait.insert(wait.begin(), fin_inp);
+                                                      }
+                                                      else{
+                                                          wait.push_back(n);
+                                                          wait.push_back(fin_inp);
+                                                      }
 
-                                                                                                 });
-                                                      });
-                               }
-                               else
-                               {
-                                   /*The Fan-out has to be connected to 1.Fan-out nodes of Inputs or 2.Inputs*/
-                                   /*Has to be rewritten for Inputs with Fan-outs higher than two*/
-                                   bool all_inputs = true;
-                                   my_ntk.foreach_fanin(fon, [&](const auto& fi){
-                                                         auto fin_inp = my_ntk.get_node(fi);
-                                                         /*Check if it´s an inverter node*/
-                                                         if (my_ntk.is_inv(fin_inp)){
-                                                             const auto fis_inv = fanins(my_ntk, fin_inp);
-                                                             fin_inp = fis_inv.fanin_nodes[0];
-                                                         }
-                                                         /*1*/
-                                                         if (my_ntk.fanout_size(fin_inp)>=2){
-                                                             my_ntk.foreach_fanin(fin_inp, [&](const auto& fin){
-                                                                                   auto fin_inp_sec = my_ntk.get_node(fin);
-                                                                                   if (my_ntk.is_inv(fin_inp_sec)){
-                                                                                       const auto fis_inv = fanins(my_ntk, fin_inp_sec);
-                                                                                       fin_inp_sec = fis_inv.fanin_nodes[0];
-                                                                                   }
-                                                                                   if(my_ntk.is_ci(fin_inp_sec) == false)
-                                                                                   {
-                                                                                       all_inputs = false;
-                                                                                   }
-                                                                               });
-                                                         }
-                                                         /*2*/
-                                                         else if(my_ntk.is_ci(fin_inp) == false)
-                                                         {
-                                                             all_inputs = false;
-                                                         }});
-                                   /*Place inputs first, which are connected "over one node" to a high-fan-out input */
-                                   if(all_inputs)
-                                   {
-                                       my_ntk.foreach_fanin(fon, [&](const auto& fi)
-                                                         {
-                                                             auto fin = my_ntk.get_node(fi);
-                                                             //12 34
-                                                             if( fin!=n)
-                                                             {
-                                                                 bool inv_flag = false;
-                                                                 if (my_ntk.is_inv(fin)){
-                                                                     const auto fis_inv = fanins(my_ntk, fin);
-                                                                     fin = fis_inv.fanin_nodes[0];
-                                                                     inv_flag = true;
-                                                                 }
-                                                                 if (my_ntk.fanout_size(fin) >= 2)
-                                                                 {
-                                                                     if(inv_flag)
-                                                                     {
-                                                                         wait.insert(wait.begin()+non_inv, n);
-                                                                     }
-                                                                     else
-                                                                     {
-                                                                         ++non_inv;
-                                                                         wait.insert(wait.begin(), n);
-                                                                     }
 
-                                                                     /*Das gehört woanders hin*/
-                                                                     /*fo_two_inv_flag = true;
-                                                                     if (!all_fanins_single_inputs)
-                                                                     {
-                                                                         fo_two_inv_flag = false;
-                                                                     }*/
-                                                                     /*++++++++++++++++++++++++++++*/
-                                                                 }
-                                                                 else
-                                                                 {
-                                                                     if(single_input_iterator==0)
-                                                                     {
-                                                                         wait.push_back(n);
-                                                                         ++single_input_iterator;
-                                                                     }
-                                                                     else if(single_input_iterator>=1)
-                                                                     {
-                                                                         if (!wait.empty())
-                                                                         {
-                                                                             const auto fo_node = fanouts(my_ntk ,n);
-                                                                             const auto fo_wait = fanouts(my_ntk, wait.at(wait.size()-single_input_iterator));
-                                                                             //std::cout<<"fo_node"<<fo_node[0]<<std::endl;
-
-                                                                             //std::cout<<"fo_wait"<<fo_wait[0]<<std::endl;
-                                                                             if(fo_node[0]==fo_wait[0]){
-                                                                                 wait.insert(wait.end()-single_input_iterator+1, n);
-                                                                             }
-
-                                                                             else
-                                                                             {
-                                                                                 wait.push_back(n);
-                                                                             }
-                                                                             ++single_input_iterator;
-                                                                         }
-                                                                     }
-
-                                                                 }
-                                                             }
-                                                             else if (my_ntk.is_inv(fin) && fin==n)
-                                                             {
-                                                                 fo_one_inv_flag = true;
-                                                             }
-                                                         });
-                                   }
-                                   else
-                                   {
-                                       wait.push_back(n);
-                                   }
-                               }
+                                                      all_inputs = true;
+                                                  }
+                                              });
+                                      }
                            });
+
 
     }
 
   private:
+    Ntk my_ntk;
     std::vector<node>     topo_order;
     std::optional<signal> start_signal;
 
-    Ntk my_ntk;
     std::vector<node> topo_wait;
+    std::vector<node> wait;
+    std::vector<node> output_node;
+
+    bool fo_inv_flag = false;
+
     uint32_t num_p;
     uint32_t num_c = 0u;
-    bool fo_one_inv_flag = false;
-    bool fo_two_inv_flag = false;
-    unsigned int single_input_iterator = 0;
-    int non_inv = 0;
-    bool all_fanins_single_inputs = false;
-    std::vector<node> wait;
+
     unsigned int push_iter;
-    bool return_flag = false;
     node next_node;
 };
 
