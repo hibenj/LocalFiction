@@ -1,3 +1,4 @@
+/*
 //
 // Created by Hien Benjamin on 27.06.2022.
 //
@@ -107,3 +108,4 @@ TEST_CASE("Name conservation blc", "[network-blc]")
     // PO names
     //CHECK(balanced_fib.get_output_name(0) == "f");
 }
+*/

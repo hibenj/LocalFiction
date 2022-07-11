@@ -1,3 +1,4 @@
+/*
 //
 // Created by Hien Benjamin on 27.06.2022.
 //
@@ -84,6 +85,7 @@ class inv_balancing_impl
 
 }  // namespace detail
 
+*/
 /**
  * Substitutes high-output degrees in a logic network with fanout nodes that compute the identity function. For this
  * purpose, create_buf is utilized. Therefore, NtkDest should support identity nodes. If it does not, no new nodes will
@@ -103,7 +105,8 @@ class inv_balancing_impl
  * @tparam NtkSrc Type of the input logic network.
  * @param ntk_src The input logic network.
  * @param ps Parameters.
- * @return A fanout-substituted logic network of type NtkDest that is logically equivalent to ntk_src.*/
+ * @return A fanout-substituted logic network of type NtkDest that is logically equivalent to ntk_src.*//*
+
 
 
 
@@ -134,3 +137,4 @@ NtkDest inv_balancing(const NtkSrc& ntk_src)
 }  // namespace fiction
 
 #endif  // FICTION_FO_INV_BALANCING_HPP
+*/

@@ -5,8 +5,6 @@
 
 #include "catch.hpp"
 
-#include "fiction/networks/views/topo_view_input_sort.hpp"
-#include "fiction/networks/views/input_sort_view.hpp"
 
 #include "fiction/algorithms/network_transformation/fanout_substitution.hpp"
 #include "fiction/networks/technology_network.hpp"
@@ -15,15 +13,15 @@
 #include "mockturtle/views/names_view.hpp"
 #include "mockturtle/views/topo_view.hpp"
 #include "utils/blueprints/network_blueprints.hpp"
-#include "mockturtle/views/topo_view.hpp"
+#include "fiction/networks/views/topo_view_input_sort.hpp"
 
-#include <set>
 
 using namespace fiction;
 
 TEST_CASE("Mux_tvis", "[Mux-sort-tvis]")
 {
-    auto mux21 = blueprints::mux21_network<mockturtle::names_view<mockturtle::aig_network>>();
+    auto mux21 = blueprints::maj1_network<mockturtle::names_view<mockturtle::aig_network>>();
+    auto tech = blueprints::maj1_network<mockturtle::names_view<technology_network>>();
 
     mockturtle::fanout_view fov{fanout_substitution<mockturtle::names_view<technology_network>>(mux21)};
     mockturtle::fanout_view isv{topo_view_input_sort{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<technology_network>>(mux21)}}};
@@ -34,6 +32,10 @@ TEST_CASE("Mux_tvis", "[Mux-sort-tvis]")
 
     std::cout<<"Input Sort foreach_pi: ";
     isv.foreach_pi([&](const auto& node) {std::cout<<node<<" ";});
+    std::cout<<std::endl;
+
+    std::cout<<"Mux tech ";
+    tech.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
 
     /*std::cout<<"Fanout_substitution: ";
@@ -86,6 +88,6 @@ TEST_CASE("Mux_tvis", "[Mux-sort-tvis]")
 
 
 
-    CHECK(isv.isFo_inv_flag()==true);
+    //CHECK(isv.isFo_inv_flag()==true);
 
 }

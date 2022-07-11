@@ -1,4 +1,3 @@
-/*
 //
 // Created by Hien Benjamin on 27.06.2022.
 //
@@ -26,17 +25,35 @@
 
 using namespace fiction;
 
+TEST_CASE("Name conservation test", "[network-conversion-n]")
+{
+    auto maj = blueprints::maj1_network<mockturtle::names_view<mockturtle::mig_network>>();
+    maj.set_network_name("maj");
+
+    const auto converted_maj = convert_network<mockturtle::names_view<fiction::technology_network>>(maj);
+
+    // network name
+    CHECK(converted_maj.get_network_name() == "maj");
+
+    // PI names
+    CHECK(converted_maj.get_name(converted_maj.make_signal(2)) == "a");
+    CHECK(converted_maj.get_name(converted_maj.make_signal(3)) == "b");
+    CHECK(converted_maj.get_name(converted_maj.make_signal(4)) == "c");
+
+    // PO names
+    CHECK(converted_maj.get_output_name(0) == "f");
+}
+
 TEST_CASE("Name conservation balance", "[network-balance]")
 {
-    auto fib = blueprints::fanout_inv_blc<mockturtle::names_view<mockturtle::aig_network>>();
-    fib.set_network_name("fib");
+    auto maj = blueprints::fanout_inv_blc<mockturtle::names_view<mockturtle::aig_network>>();
+    maj.set_network_name("fib");
 
     std::cout<<"NODES AIG ";
-    fib.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
+    maj.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
 
-    const auto substituted = mockturtle::fanout_view(fanout_substitution<mockturtle::names_view<technology_network>>(fib));
-
+    const auto substituted = fanout_substitution<mockturtle::names_view<fiction::technology_network>>(maj);
     std::cout<<"NODES FOS ";
     substituted.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
@@ -66,7 +83,10 @@ TEST_CASE("Name conservation balance", "[network-balance]")
                      });
     std::cout<<std::endl;
 
-    const auto balanced_fib = inverter_balancing<mockturtle::fanout_view<mockturtle::names_view<technology_network>>>(substituted);
+    const auto balanced_fib = mockturtle::fanout_view{inverter_balancing(fanout_substitution<mockturtle::names_view<fiction::technology_network>>(maj))};
+
+    std::cout<<"size ";
+    std::cout<<balanced_fib.size()<<std::endl;
 
     std::cout<<"NODES BLC ";
     balanced_fib.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
@@ -97,6 +117,16 @@ TEST_CASE("Name conservation balance", "[network-balance]")
                              });
     std::cout<<std::endl;
 
+    balanced_fib.foreach_node([&](const auto& node) {
+                                  balanced_fib.foreach_fanin(node, [&](const auto& fi)
+                                    {
+                                        const auto new_node = balanced_fib.get_node(fi);
+                                        std::cout<<"Node: "<<node<<" with fan-ins: "<<new_node<<std::endl;
+                                    });
+                              });
+    std::cout<<std::endl;
+
+
     // network name
     CHECK(balanced_fib.get_network_name() == "fib");
 
@@ -107,4 +137,4 @@ TEST_CASE("Name conservation balance", "[network-balance]")
 
     // PO names
     CHECK(balanced_fib.get_output_name(0) == "f");
-}*/
+}

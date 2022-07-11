@@ -1,4 +1,3 @@
-/*
 //
 // Created by Hien Benjamin on 27.06.2022.
 //
@@ -27,80 +26,78 @@ namespace fiction
 namespace detail
 {
 
+template<typename NtkSrc>
+NtkSrc recursive(const NtkSrc& ntk);
 
-template <typename NtkDest, typename NtkSrc>
+template <typename NtkSrc>
 class inverter_balancing_impl
 {
   public:
     explicit inverter_balancing_impl(const NtkSrc& ntk_src) : ntk{ntk_src} {}
 
-    NtkDest run()
+    NtkSrc run()
     {
-        auto  init     = mockturtle::initialize_copy_network<NtkDest>(ntk);
+        auto  init     = mockturtle::initialize_copy_network<NtkSrc>(ntk);
         auto& ntk_dest = init.first;
         auto& old2new  = init.second;
 
-        const auto get_substitution = [this, &ntk_dest, &old2new](const auto& n)
+        const auto gather_fanin_signals = [this, &ntk_dest, &old2new](const auto& n)
         {
-            std::vector<typename NtkDest::signal> children{};
+            std::vector<typename NtkSrc::signal> children{};
 
-            ntk.foreach_fanin(n,
-                              [this, &ntk_dest, &old2new, &children](const auto& f)
-                              {
-                                  const auto fn         = ntk.get_node(f);
-                                  const auto tgt_signal = old2new[fn];
-
-                                  children.emplace_back(ntk.is_complemented(f) ? ntk_dest.create_not(tgt_signal) :
-                                                                                 tgt_signal);
-                              });
-
-            return children;
-
-            */
-/*std::vector<typename NtkDest::signal> children{};
-            bool substitute{false};
-
-            if(ntk.is_fanout(n))
+            if (fo_ntk.is_fanout(n))
             {
-                const auto fos = fanouts(ntk, n);
-                substitute = std::all_of(fos.begin(), fos.end(), [&](const auto& inv_check){
-                                             return ntk.is_inv(inv_check);});
-                if(substitute){
-                    ntk.foreach_fanout(n, [&](const auto& di){del_inv.push_back(di);});
+                auto fanout_inv = fanouts(fo_ntk, n);
+                auto balance = std::all_of(fanout_inv.begin(), fanout_inv.end(),[&](const auto& fo_node)
+                                              {return fo_ntk.is_inv(fo_node);});
+                if(balance){
+                    del_inv = fanout_inv[1];
+                    blc_fos=n;
                 }
             }
 
             ntk.foreach_fanin(n,
-                              [this, &ntk_dest, &old2new, &children, &substitute, &n](const auto& f)
+                              [this, &ntk_dest, &old2new, &children, &n](const auto& f)
                               {
-                                  const auto fn         = ntk.get_node(f);
-                                  const auto fn_tgt_signal = old2new[fn];
+                                  auto fn         = ntk.get_node(f);
 
-                                  if (std::count(del_inv.begin(), del_inv.end(), fn))
-                                  {
-                                      ntk.foreach_fanin(fn,
-                                                        [this, &ntk_dest, &old2new, &children, &substitute](const auto& ff)
-                                                        {
-                                                            const auto ffn         = ntk.get_node(ff);
-                                                            const auto ffn_tgt_signal = old2new[ffn];
+                                  /*New children for balanced fan-out nodes*/
+                                  if(blc_fos==n){
+                                      const auto fos = fanouts(fo_ntk, n);
+                                      //fn = fos[0];
+                                      new_inv=fos[0];
+                                  }
 
-                                                            children.emplace_back(ffn_tgt_signal);
-                                                        });
+                                  /*New children for new inverter node*/
+                                  /*bool inv_ch = false;
+                                  for(auto i = new_inv.begin(); i < new_inv.end(); ++i){
+                                      if(*i == n){
+                                          inv_ch=true;
+                                      }
                                   }
-                                  else if (substitute)
-                                  {
-                                      children.emplace_back(ntk_dest.create_not(fn_tgt_signal));
+                                  if(inv_ch){
+                                      const auto fis_inv = fanins(fo_ntk, fn);
+                                      fn = fis_inv.fanin_nodes[0]; //fan-in of the inverter is the fan-out node
+                                      const auto fis_fo = fanins(fo_ntk, fn);
+                                      fn = fis_fo.fanin_nodes[0]; //fan-in of the fan-out node is the PI node
+                                  }*/
+
+                                  /*New children for nodes with deleted Inverters as fan-in*/
+                                  if(del_inv == fn){
+                                      const auto fis = fanins(fo_ntk, fn);
+                                      fn = new_inv;
                                   }
-                                  else
-                                  {
-                                      children.emplace_back(fn_tgt_signal);
-                                  }
+
+                                  const auto tgt_signal = old2new[fn];
+
+                                  /*children.emplace_back(ntk.is_complemented(f) ? ntk_dest.create_not(tgt_signal) :
+                                                                                 tgt_signal);*/
+
+                                  children.emplace_back(tgt_signal);
                               });
 
-            return children;*//*
-
+            return children;
         };
-
 
 
 #if (PROGRESS_BARS)
@@ -111,24 +108,35 @@ class inverter_balancing_impl
         ntk.foreach_gate(
             [&, this](const auto& g, [[maybe_unused]] auto i)
             {
-                std::cout << "GATE" << g << std::endl;
-                auto children = get_substitution(g);
+                auto children = gather_fanin_signals(g);
 
 #if (PROGRESS_BARS)
                 // update progress
                 bar(i);
 #endif
-                */
-/*if constexpr (has_is_inv_v<TopoNtkSrc> && mockturtle::has_create_not_v<NtkDest>)
+
+                if constexpr (has_is_inv_v<TopoNtkSrc>)
                 {
-                    if (ntk.is_inv(g) && !std::count(del_inv.begin(), del_inv.end(), g))
+                    if (ntk.is_inv(g) && new_inv==g)
+                    {
+                        old2new[g] = ntk_dest.create_buf(children[0]);
+                        return true;
+                    }
+                    else if (ntk.is_inv(g) && del_inv == g)
+                    {
+                        //old2new[g] = ntk_dest.create_buf(children[0]);
+                        return true;
+                    }
+                }
+                if constexpr (fiction::has_is_buf_v<TopoNtkSrc> && mockturtle::has_create_buf_v<NtkSrc>)
+                {
+                    if (ntk.is_buf(g) && blc_fos == g)
                     {
                         old2new[g] = ntk_dest.create_not(children[0]);
                         return true;
                     }
-                }*//*
-
-                if constexpr (mockturtle::has_is_and_v<TopoNtkSrc> && mockturtle::has_create_and_v<NtkDest>)
+                }
+                if constexpr (mockturtle::has_is_and_v<TopoNtkSrc> && mockturtle::has_create_and_v<NtkSrc>)
                 {
                     if (ntk.is_and(g))
                     {
@@ -136,7 +144,7 @@ class inverter_balancing_impl
                         return true;
                     }
                 }
-                if constexpr (mockturtle::has_is_or_v<TopoNtkSrc> && mockturtle::has_create_or_v<NtkDest>)
+                if constexpr (mockturtle::has_is_or_v<TopoNtkSrc> && mockturtle::has_create_or_v<NtkSrc>)
                 {
                     if (ntk.is_or(g))
                     {
@@ -144,7 +152,7 @@ class inverter_balancing_impl
                         return true;
                     }
                 }
-                if constexpr (mockturtle::has_is_xor_v<TopoNtkSrc> && mockturtle::has_create_xor_v<NtkDest>)
+                if constexpr (mockturtle::has_is_xor_v<TopoNtkSrc> && mockturtle::has_create_xor_v<NtkSrc>)
                 {
                     if (ntk.is_xor(g))
                     {
@@ -152,7 +160,7 @@ class inverter_balancing_impl
                         return true;
                     }
                 }
-                if constexpr (mockturtle::has_is_maj_v<TopoNtkSrc> && mockturtle::has_create_maj_v<NtkDest>)
+                if constexpr (mockturtle::has_is_maj_v<TopoNtkSrc> && mockturtle::has_create_maj_v<NtkSrc>)
                 {
                     if (ntk.is_maj(g))
                     {
@@ -160,7 +168,7 @@ class inverter_balancing_impl
                         return true;
                     }
                 }
-                if constexpr (mockturtle::has_is_nary_and_v<TopoNtkSrc> && mockturtle::has_create_nary_and_v<NtkDest>)
+                if constexpr (mockturtle::has_is_nary_and_v<TopoNtkSrc> && mockturtle::has_create_nary_and_v<NtkSrc>)
                 {
                     if (ntk.is_nary_and(g))
                     {
@@ -168,7 +176,7 @@ class inverter_balancing_impl
                         return true;
                     }
                 }
-                if constexpr (mockturtle::has_is_nary_or_v<TopoNtkSrc> && mockturtle::has_create_nary_or_v<NtkDest>)
+                if constexpr (mockturtle::has_is_nary_or_v<TopoNtkSrc> && mockturtle::has_create_nary_or_v<NtkSrc>)
                 {
                     if (ntk.is_nary_or(g))
                     {
@@ -176,7 +184,7 @@ class inverter_balancing_impl
                         return true;
                     }
                 }
-                if constexpr (mockturtle::has_is_nary_xor_v<TopoNtkSrc> && mockturtle::has_create_nary_xor_v<NtkDest>)
+                if constexpr (mockturtle::has_is_nary_xor_v<TopoNtkSrc> && mockturtle::has_create_nary_xor_v<NtkSrc>)
                 {
                     if (ntk.is_nary_xor(g))
                     {
@@ -184,15 +192,7 @@ class inverter_balancing_impl
                         return true;
                     }
                 }
-                if constexpr (fiction::has_is_buf_v<TopoNtkSrc> && mockturtle::has_create_buf_v<NtkDest>)
-                {
-                    if (ntk.is_buf(g))
-                    {
-                        old2new[g] = ntk_dest.create_buf(children[0]);
-                        return true;
-                    }
-                }
-                if constexpr (mockturtle::has_node_function_v<TopoNtkSrc> && mockturtle::has_create_node_v<NtkDest>)
+                if constexpr (mockturtle::has_node_function_v<TopoNtkSrc> && mockturtle::has_create_node_v<NtkSrc>)
                 {
                     old2new[g] = ntk_dest.create_node(children, ntk.node_function(g));
                     return true;
@@ -213,18 +213,44 @@ class inverter_balancing_impl
         // restore signal names if applicable
         fiction::restore_names(ntk, ntk_dest, old2new);
 
+
         return ntk_dest;
+
     }
 
   private:
     using TopoNtkSrc = mockturtle::topo_view<NtkSrc>;
     TopoNtkSrc ntk;
-    using node = typename NtkDest::node;
-    std::vector<node> del_inv;
+    mockturtle::fanout_view<TopoNtkSrc> fo_ntk{ntk};
+    using node = typename NtkSrc::node;
+    node del_inv;
+    node new_inv;
+    node blc_fos;
 };
+
+template<typename NtkSrc>
+bool inverter_balancing_recursive(const NtkSrc& ntk){
+    bool return_val = false;
+    const auto fo_ntk= mockturtle::fanout_view<NtkSrc>(ntk);
+    //detail::inverter_balancing_impl<NtkSrc> k(ntk);
+    ntk.foreach_gate(
+        [&](const auto& g)
+        {
+            if (ntk.fanout_size(g)>=2)
+            {
+                auto fanout_inv = fanouts(fo_ntk, g);
+                auto balance = std::all_of(fanout_inv.begin(), fanout_inv.end(),[&](const auto& fo_node)
+                                              {return fo_ntk.is_inv(fo_node);});
+                if(balance){
+                    return_val = true;
+                }
+            }
+        });
+    return return_val;
+}
+
 }  // namespace detail
 
-*/
 /**
  * Converts a logic network into an equivalent one of another type. Thereby, this function is very similar to
  * mockturtle::cleanup_dangling. However, it supports real buffer nodes used for fanouts and path balancing in fiction.
@@ -235,14 +261,13 @@ class inverter_balancing_impl
  * @tparam NtkDest Type of the returned logic network.
  * @tparam NtkSrc Type of the input logic network.
  * @param ntk The input logic network.
- * @return A logic network of type NtkDest that is logically equivalent to ntk.
- *//*
+ * @return A logic network of type NtkDest that is logically equivalent to ntk.*/
 
-template <typename NtkDest, typename NtkSrc>
-NtkDest inverter_balancing(const NtkSrc& ntk)
+
+template <typename NtkSrc>
+NtkSrc inverter_balancing(const NtkSrc& ntk)
 {
     static_assert(mockturtle::is_network_type_v<NtkSrc>, "NtkSrc is not a network type");
-    static_assert(mockturtle::is_network_type_v<NtkDest>, "NtkDest is not a network type");
 
     static_assert(mockturtle::has_get_node_v<NtkSrc>, "NtkSrc does not implement the get_node function");
     static_assert(mockturtle::has_is_complemented_v<NtkSrc>, "NtkSrc does not implement the is_complemented function");
@@ -252,28 +277,37 @@ NtkDest inverter_balancing(const NtkSrc& ntk)
     static_assert(mockturtle::has_foreach_fanin_v<NtkSrc>, "NtkSrc does not implement the foreach_fanin function");
 
     static_assert(mockturtle::has_get_constant_v<NtkSrc>, "NtkSrc does not implement the get_constant function");
-    static_assert(mockturtle::has_get_constant_v<NtkDest>, "NtkDest does not implement the get_constant function");
 
-    static_assert(mockturtle::has_create_pi_v<NtkDest>, "NtkDest does not implement the create_pi function");
-    static_assert(mockturtle::has_create_po_v<NtkDest>, "NtkDest does not implement the create_po function");
-    static_assert(mockturtle::has_create_not_v<NtkDest>, "NtkDest does not implement the create_not function");
-    static_assert(mockturtle::has_create_and_v<NtkDest>, "NtkDest does not implement the create_and function");
-    static_assert(mockturtle::has_create_or_v<NtkDest>, "NtkDest does not implement the create_or function");
-    static_assert(mockturtle::has_create_xor_v<NtkDest>, "NtkDest does not implement the create_xor function");
-    static_assert(mockturtle::has_create_maj_v<NtkDest>, "NtkDest does not implement the create_maj function");
+    static_assert(mockturtle::has_create_pi_v<NtkSrc>, "NtkDest does not implement the create_pi function");
+    static_assert(mockturtle::has_create_po_v<NtkSrc>, "NtkDest does not implement the create_po function");
+    static_assert(mockturtle::has_create_not_v<NtkSrc>, "NtkDest does not implement the create_not function");
+    static_assert(mockturtle::has_create_and_v<NtkSrc>, "NtkDest does not implement the create_and function");
+    static_assert(mockturtle::has_create_or_v<NtkSrc>, "NtkDest does not implement the create_or function");
+    static_assert(mockturtle::has_create_xor_v<NtkSrc>, "NtkDest does not implement the create_xor function");
+    static_assert(mockturtle::has_create_maj_v<NtkSrc>, "NtkDest does not implement the create_maj function");
 
-    static_assert(has_is_fanout_v<NtkDest>, "NtkDest does not implement the has_is_fanout function");
+    static_assert(has_is_fanout_v<NtkSrc>, "NtkDest does not implement the has_is_fanout function");
     // TODO handle ci/ro/etc...
 
     assert(ntk.is_combinational() && "Network has to be combinational");
 
-    detail::inverter_balancing_impl<NtkDest, NtkSrc> p{ntk};
+    detail::inverter_balancing_impl<NtkSrc> p{ntk};
 
     auto result = p.run();
+
+    bool rerun = detail::inverter_balancing_recursive(result);
+
+    do{
+        detail::inverter_balancing_impl<NtkSrc> k{result};
+
+        result = k.run();
+
+        rerun = detail::inverter_balancing_recursive(result);
+    }
+    while(rerun);
 
     return result;
 }
 
 }  // namespace fiction
 #endif  // FICTION_FANOUT_INVERTER_BALANCING_HPP
-*/

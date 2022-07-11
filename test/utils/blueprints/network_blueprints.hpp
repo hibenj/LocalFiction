@@ -477,12 +477,17 @@ Ntk fanout_inv_blc()
     const auto x1    = ntk.create_pi("a");
     const auto x2    = ntk.create_pi("b");
     const auto x3    = ntk.create_pi("c");
-    const auto n1  = ntk.create_not(x3);
-    const auto a1  = ntk.create_and(x1, n1);
-    const auto a2  = ntk.create_and(x2, n1);
-    const auto a3 = ntk.create_and(a1, a2);
+    const auto x4    = ntk.create_pi("d");
 
-    ntk.create_po(a3, "f");
+    const auto n1  = ntk.create_not(x1);
+
+    const auto a1  = ntk.create_and(n1, x2);
+    const auto a2  = ntk.create_and(n1, x3);
+    const auto a3  = ntk.create_and(n1, x4);
+    const auto a4  = ntk.create_and(a1, a2);
+    const auto a5  = ntk.create_and(a4, a3);
+
+    ntk.create_po(a5, "f");
 
     return ntk;
 }
@@ -521,6 +526,78 @@ Ntk TESTb()
 
     return ntk;
 }
+
+template <typename Ntk>
+Ntk TESTc()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+
+    const auto a1 = ntk.create_and(x1, x2);
+    const auto a2 = ntk.create_and(x1, x3);
+
+    const auto a4 = ntk.create_and(a1, a2);
+    const auto a5 = ntk.create_and(x1, a4);
+    const auto a6 = ntk.create_and(x1, a5);
+
+    ntk.create_po(a6, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk onebitAdderAOIG()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+
+    const auto o1 = ntk.create_or(x2, x3);
+    const auto a1 = ntk.create_and(x2, x3);
+
+    const auto n1    = ntk.create_not(a1);
+
+    const auto a2 = ntk.create_and(o1, n1);
+    const auto o2 = ntk.create_or(x1, a2);
+    const auto a3 = ntk.create_and(x1, a2);
+
+    const auto n2    = ntk.create_not(a3);
+
+    const auto a4 = ntk.create_and(o2, a3);
+    const auto o3 = ntk.create_or(x2, a4);
+
+    ntk.create_po(a4, "f");
+    ntk.create_po(o3, "g");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk FA()
+{
+    Ntk ntk{};
+    const auto x    = ntk.create_pi("a");
+    const auto y    = ntk.create_pi("b");
+    const auto cin    = ntk.create_pi("c");
+
+    const auto a1 = ntk.create_and(x, y);
+    const auto xor1 = ntk.create_xor(x, y);
+    const auto a2 = ntk.create_and(xor1, cin);
+    const auto o1 = ntk.create_or(a1, a2);
+    const auto xor2 = ntk.create_xor(cin, xor1);
+
+
+
+    ntk.create_po(o1, "cout");
+    ntk.create_po(xor2, "s");
+
+    return ntk;
+}
+
+
 
 }  // namespace blueprints
 

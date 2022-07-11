@@ -197,6 +197,10 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
 
         this->foreach_node([this](auto n){if(my_ntk.is_constant(n))++num_c;});
 
+        /*this->incr_trav_id();
+        uint32_t trav_id = this->trav_id();
+        this->incr_trav_id();*/
+
         this->foreach_ci(
             [this](auto n)
             {
@@ -207,6 +211,10 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
         for(unsigned int iter = 0; iter < wait.size(); ++iter){
             topo_order.push_back(wait[iter]);
             this->set_visited(wait[iter], this->trav_id());
+        }
+        for(unsigned int iter = 0; iter < second_wait.size(); ++iter){
+            topo_order.push_back(second_wait[iter]);
+            this->set_visited(second_wait[iter], this->trav_id());
         }
 
         if (start_signal)
@@ -241,6 +249,8 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
              create_rest_topo(topo_wait[push_iter], reset_trav_id);
          }
     }
+
+
 
   private:
     void create_topo_rec(node const& n)
@@ -329,6 +339,26 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
         }
     }
 
+    void get_fo_network(node const& n)
+    {
+        std::cout<<"Hi";
+        my_ntk.foreach_fanout(n,
+                        [&](const auto& fon) {
+                                  std::cout<<"Hi";
+                                  node high_fanout = fon;
+                            if (my_ntk.is_inv(fon))
+                            {
+                                auto fos = fanouts(my_ntk, fon);
+                                high_fanout = fos[0];
+                            }
+                            if (my_ntk.is_fanout(fon))
+                            {
+                                high_fan_out_node.push_back(fon);
+                                get_fo_network(high_fanout);
+                            }
+                        });
+}
+
     void input_sort(node const& n){
 
         /*Place High Fan-out nodes first*/
@@ -345,6 +375,13 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                                           my_ntk.foreach_fanout(fon,
                                                              [&](const auto& fon_inv) { output_node[0] = fon_inv; });
                                       }
+                                      high_fan_out_node.clear();
+                                      high_fan_out_node.push_back(output_node[0]);
+                                      /*get_fo_network(output_node[0]);
+                                      for(auto i = high_fan_out_node.begin(); i<high_fan_out_node.end(); ++i){
+
+                                      }*/
+
                                       if (my_ntk.is_fanout(output_node[0])){
                                           is_fan_out = true;
                                           topo_order.push_back(n);
@@ -353,13 +390,18 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                                           output_node.clear();
                                           my_ntk.foreach_fanout(safe_node,
                                                              [&](const auto& fon) {
-                                                                 if (my_ntk.is_inv(fon))
-                                                                 {
-                                                                     /*Inverter Flag*/
-                                                                     my_ntk.foreach_fanout(fon,
-                                                                                        [&](const auto& fon_inv) { output_node.insert(output_node.begin(), fon_inv);});
-                                                                 }else
-                                                                     output_node.push_back(fon);
+                                                                    if (my_ntk.is_fanout(fon))
+                                                                    {
+                                                                        return;
+                                                                    }
+                                                                    else if (my_ntk.is_inv(fon))
+                                                                    {
+                                                                        /*Inverter Flag*/
+                                                                        my_ntk.foreach_fanout(fon,
+                                                                                              [&](const auto& fon_inv) { output_node.insert(output_node.begin(), fon_inv);});
+                                                                     }
+                                                                     else
+                                                                         output_node.push_back(fon);
                                                              });
                                       }
 
@@ -393,27 +435,58 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                                                                   const auto fis_inv = fanins(my_ntk, fin_inp_sec);
                                                                   fin_inp_sec        = fis_inv.fanin_nodes[0];
                                                               }
-                                                              if (my_ntk.is_ci(fin_inp_sec) == true &&
-                                                                  fin_inp_sec != n)
-                                                              {
-                                                                  all_inputs = true;
+                                                              if(fin_inp_sec != n){
+                                                                  if (my_ntk.is_ci(fin_inp_sec))
+                                                                  {
+                                                                      all_inputs = true;
+                                                                  }
+                                                                  else
+                                                                  {
+                                                                      if (this->visited(n) != this->trav_id()){
+                                                                          second_wait.push_back(n);
+                                                                          this->set_visited(n, this->trav_id());
+                                                                      }
+                                                                  }
+
                                                               }
+
                                                           });
                                                   }
                                                   /*2*/
-                                                  else if (my_ntk.is_ci(fin_inp) == true && fin_inp != n)
+                                                  else if (fin_inp != n)
                                                   {
-                                                      if(is_fan_out)
+                                                      if (my_ntk.is_ci(fin_inp))
                                                       {
-                                                              wait.insert(wait.begin(), fin_inp);
+                                                          if (is_fan_out)
+                                                          {
+                                                              if (this->visited(fin_inp) != this->trav_id())
+                                                              {
+                                                                  wait.insert(wait.begin(), fin_inp);
+                                                                  this->set_visited(fin_inp, this->trav_id());
+                                                              }
+                                                          }
+                                                          else
+                                                          {
+                                                              if (this->visited(n) != this->trav_id())
+                                                              {
+                                                                  wait.push_back(n);
+                                                                  this->set_visited(n, this->trav_id());
+                                                              }
+                                                              if (this->visited(fin_inp) != this->trav_id())
+                                                              {
+                                                                  wait.push_back(fin_inp);
+                                                                  this->set_visited(fin_inp, this->trav_id());
+                                                              }
+                                                          }
                                                       }
-                                                      else{
-                                                          wait.push_back(n);
-                                                          wait.push_back(fin_inp);
+                                                      else
+                                                      {
+                                                          if (this->visited(n) != this->trav_id())
+                                                          {
+                                                              second_wait.push_back(n);
+                                                              this->set_visited(n, this->trav_id());
+                                                          }
                                                       }
-
-
-                                                      all_inputs = true;
                                                   }
                                               });
                                       }
@@ -429,7 +502,10 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
 
     std::vector<node> topo_wait;
     std::vector<node> wait;
+    std::vector<node> second_wait;
     std::vector<node> output_node;
+    std::vector<node> high_fan_out_node;
+
 
     bool fo_inv_flag = false;
 
