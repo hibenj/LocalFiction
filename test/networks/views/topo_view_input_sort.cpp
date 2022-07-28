@@ -20,8 +20,8 @@ using namespace fiction;
 
 TEST_CASE("Mux_tvis", "[Mux-sort-tvis]")
 {
-    auto mux21 = blueprints::maj1_network<mockturtle::names_view<mockturtle::aig_network>>();
-    auto tech = blueprints::maj1_network<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::TESTc<mockturtle::names_view<mockturtle::aig_network>>();
+    auto tech = blueprints::TESTc<mockturtle::names_view<technology_network>>();
 
     mockturtle::fanout_view fov{fanout_substitution<mockturtle::names_view<technology_network>>(mux21)};
     mockturtle::fanout_view isv{topo_view_input_sort{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<technology_network>>(mux21)}}};

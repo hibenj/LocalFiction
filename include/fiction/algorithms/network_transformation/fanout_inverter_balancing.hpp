@@ -7,6 +7,7 @@
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"
 #include "fiction/utils/name_utils.hpp"
+#include "mockturtle/views/fanout_view.hpp"
 
 #include <mockturtle/traits.hpp>
 #include <mockturtle/utils/node_map.hpp>
@@ -57,7 +58,7 @@ class inverter_balancing_impl
             }
 
             ntk.foreach_fanin(n,
-                              [this, &ntk_dest, &old2new, &children, &n](const auto& f)
+                              [this, &old2new, &children, &n](const auto& f)
                               {
                                   auto fn         = ntk.get_node(f);
 

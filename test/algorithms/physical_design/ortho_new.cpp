@@ -6,6 +6,8 @@
 #include "utils/blueprints/network_blueprints.hpp"
 #include "utils/equivalence_checking_utils.hpp"
 
+#include "fiction/algorithms/network_transformation/fanout_inverter_balancing.hpp"
+
 #include <fiction/algorithms/physical_design/apply_gate_library.hpp>
 #include <fiction/algorithms/physical_design/ortho_new.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>
@@ -15,11 +17,13 @@
 #include <fiction/layouts/tile_based_layout.hpp>
 #include <fiction/networks/technology_network.hpp>
 #include <fiction/technology/qca_one_library.hpp>
+#include <fiction/algorithms/verification/design_rule_violations.hpp>
 
 #include <mockturtle/networks/aig.hpp>
 #include <mockturtle/networks/mig.hpp>
 #include <mockturtle/views/fanout_view.hpp>
 #include <mockturtle/views/names_view.hpp>
+
 
 #include <type_traits>
 
@@ -73,7 +77,7 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::FA<mockturtle::names_view<mockturtle::aig_network>>();
+    auto mux21 = blueprints::maj1_network<mockturtle::names_view<mockturtle::aig_network>>();
     mux21.set_network_name("mux21");
 
     const auto layout = orthogonal_new<gate_layout>(mux21);
@@ -102,10 +106,20 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::TESTa<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::maj1_network<mockturtle::names_view<technology_network>>();
     mux21.set_network_name("mux21");
 
-    const auto layout = orthogonal_new<gate_layout>(mux21);
+    auto layout = orthogonal_new<gate_layout>(mux21);
+
+    gate_level_drvs(layout);
+
+    std::cout<<"Clock number on [3, 5, 0]"<<layout.get_clock_number({3, 5-1,0})<<std::endl;
+    std::cout<<"Clock number on [3, 6, 0]"<<layout.get_clock_number({3, 6-1,0})<<std::endl;
+    std::cout<<"Clock number on [3, 7, 0]"<<layout.get_clock_number({3, 7-1,0})<<std::endl;
+    std::cout<<"Clock number on [4, 7, 0]"<<layout.get_clock_number({4,7-1,0})<<std::endl;
+    std::cout<<"Clock number on [4, 6, 0]"<<layout.get_clock_number({4,6-1,0})<<std::endl;
+    std::cout<<"Clock number on [5, 6, 0]"<<layout.get_clock_number({5,6-1,0})<<std::endl;
+
 
     // network name
     CHECK(layout.get_layout_name() == "mux21");

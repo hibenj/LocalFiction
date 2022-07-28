@@ -25,6 +25,27 @@ Ntk maj1_network()
 }
 
 template <typename Ntk>
+Ntk majAOIG_network()
+{
+    Ntk ntk{};
+
+    const auto a = ntk.create_pi("a");
+    const auto b = ntk.create_pi("b");
+    const auto c = ntk.create_pi("c");
+
+    const auto a1 = ntk.create_and(a, b);
+    const auto a2 = ntk.create_and(a, c);
+    const auto a3 = ntk.create_and(b, c);
+
+    const auto o1 = ntk.create_or(a1, a2);
+    const auto o2 = ntk.create_or(o1, a3);
+
+    ntk.create_po(o2, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
 Ntk maj4_network()
 {
     Ntk ntk{};
@@ -486,8 +507,9 @@ Ntk fanout_inv_blc()
     const auto a3  = ntk.create_and(n1, x4);
     const auto a4  = ntk.create_and(a1, a2);
     const auto a5  = ntk.create_and(a4, a3);
+    const auto a6  = ntk.create_and(a5, n1);
 
-    ntk.create_po(a5, "f");
+    ntk.create_po(a6, "f");
 
     return ntk;
 }

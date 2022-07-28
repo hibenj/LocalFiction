@@ -2,19 +2,12 @@
 // Created by Hien Benjamin on 27.06.2022.
 //
 #include "catch.hpp"
-#include "mockturtle/views/fanout_view.hpp"
-#include "utils/blueprints/layout_blueprints.hpp"
 #include "utils/blueprints/network_blueprints.hpp"
-#include "utils/equivalence_checking_utils.hpp"
 
 #include <fiction/algorithms/network_transformation/fanout_inverter_balancing.hpp>
 #include <fiction/algorithms/network_transformation/fanout_substitution.hpp>
 #include <fiction/algorithms/network_transformation/network_balancing.hpp>
 #include <fiction/algorithms/network_transformation/network_conversion.hpp>
-#include <fiction/layouts/cartesian_layout.hpp>
-#include <fiction/layouts/clocked_layout.hpp>
-#include <fiction/layouts/gate_level_layout.hpp>
-#include <fiction/layouts/tile_based_layout.hpp>
 #include <fiction/networks/technology_network.hpp>
 
 #include <kitty/dynamic_truth_table.hpp>
@@ -117,14 +110,14 @@ TEST_CASE("Name conservation balance", "[network-balance]")
                              });
     std::cout<<std::endl;
 
-    balanced_fib.foreach_node([&](const auto& node) {
+    /*balanced_fib.foreach_node([&](const auto& node) {
                                   balanced_fib.foreach_fanin(node, [&](const auto& fi)
                                     {
                                         const auto new_node = balanced_fib.get_node(fi);
                                         std::cout<<"Node: "<<node<<" with fan-ins: "<<new_node<<std::endl;
                                     });
                               });
-    std::cout<<std::endl;
+    std::cout<<std::endl;*/
 
 
     // network name
