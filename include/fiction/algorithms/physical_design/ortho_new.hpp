@@ -427,6 +427,61 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
     return ctn;
 }
 
+/*Searching for nodes, which have to place a buffer after them according to the delays resulting from majority gates*/
+template <typename Ntk>
+std::vector<mockturtle::node<Ntk>> majority_buffer(const Ntk& ntk) noexcept
+{
+    reverse_view                           rv{ntk};
+    std::vector<mockturtle::node<Ntk>> delay_nodes;
+
+    rv.foreach_gate(
+    [&](const auto& n)
+        {
+            int size{0};
+            int iterator{0};
+            foreach_incoming_edge(ntk, n,
+                          [&](const auto& e){++size;});
+
+            std::vector<int>                         delays(size);
+            std::vector<mockturtle::node<Ntk>> incoming_path_node(size);
+
+            foreach_incoming_edge(ntk, n,
+                          [&](const auto& e)
+                                  {
+
+                                      auto node_paths = all_incoming_edge_paths(ntk, e.source);
+                                      incoming_path_node[iterator] = e.source;
+
+                                      for(int i = 0; i < node_paths.size(); ++i)
+                                      {
+                                          int path_delay = 0;
+                                          for(int j = 0; j < node_paths[i].size(); ++j)
+                                          {
+                                              if(ntk.is_maj(node_paths[i][j].target))
+                                              {
+                                                  ++path_delay;
+                                              }
+                                          }
+                                          if(delays[iterator]<path_delay)
+                                          {
+                                              delays[iterator]=path_delay;
+                                          }
+                                      }
+                                      ++iterator;
+                                  });
+
+            int max = *std::max_element(delays.begin(), delays.end());
+            for(int k=0; k<delays.size(); ++k)
+            {
+                if(max - delays[k] > 0)
+                {
+                    incoming_path_node[k];
+                }
+            }
+        });
+    return delay_nodes;
+}
+
 
 template <typename Lyt, typename Ntk>
 class orthogonal_new_impl
@@ -444,6 +499,9 @@ class orthogonal_new_impl
         mockturtle::stopwatch stop{pst.time_total};
         // compute a coloring
         const auto ctn = new_east_south_edge_coloring(ntk);
+
+        const auto maj_buf = majority_buffer(ntk);
+        /*std::cout<<"First Element of maj buf"<<maj_buf[0]<<std::endl;*/
 
         mockturtle::node_map<mockturtle::signal<Lyt>, decltype(ctn.color_ntk)> node2pos{ctn.color_ntk};
 
@@ -529,18 +587,18 @@ class orthogonal_new_impl
                             t2 = {latest_pos.x + 3, pre2_t.y    };
                             t3 = {latest_pos.x    , pre2_t.y + 2};
                         }*/
-                        if(pre3_t.y - pre1_t.y <= 3)
+                        if(pre3_t.y - pre2_t.y < 4)
                         {
-                            //pre1_t gives y coordinates
-                            t1 = {latest_pos.x + 3, pre1_t.y    };
-                            t2 = {latest_pos.x + 2, pre1_t.y + 1};
-                            t3 = {latest_pos.x    , pre1_t.y + 3};
+                            //pre2_t gives y coordinates
+                            t1 = {latest_pos.x + 3, pre2_t.y + 3};
+                            t2 = {latest_pos.x + 2, pre2_t.y    };
+                            t3 = {latest_pos.x    , pre2_t.y + 4};
                         }
                         else
                         {
                             //pre3_t gives y coordinates
-                            t1 = {latest_pos.x + 3, pre3_t.y - 3};
-                            t2 = {latest_pos.x + 2, pre3_t.y - 2};
+                            t1 = {latest_pos.x + 2, pre3_t.y - 1};
+                            t2 = {latest_pos.x + 1, pre3_t.y - 4};
                             t3 = {latest_pos.x    , pre3_t.y    };
                         }
                         // coordinates of the majority gate
@@ -553,7 +611,7 @@ class orthogonal_new_impl
 
                         //Delay Network
                         //T1
-                        pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, t1.y + 5}));
+                        pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, t1.y+1}));
                         //end
                         //T2
                         pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t2.y + 2}));
@@ -568,8 +626,10 @@ class orthogonal_new_impl
                         layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
                         //end
                         //T3
-                        pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, t3.y + 3}));
-                        pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {pre3_t.x + 2, pre3_t.y}));
+                        if(t3.y != pre3_t.y){
+                            pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, t3.y+1}));
+                            pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {pre3_t.x + 2, pre3_t.y}));
+                        }
                         pre_clock = layout.get_clock_number({pre3_t});
                         pre3_t = static_cast<tile<Lyt>>(wire_north(layout, pre3_t, {pre3_t.x, pre3_t.y - 2}));
                         layout.assign_clock_number({pre3_t.x,pre3_t.y,0}, pre_clock+1);
