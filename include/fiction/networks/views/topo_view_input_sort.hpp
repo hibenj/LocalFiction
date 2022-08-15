@@ -216,6 +216,10 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
             topo_order.push_back(second_wait[iter]);
             this->set_visited(second_wait[iter], this->trav_id());
         }
+        for(unsigned int iter = 0; iter < third_wait.size(); ++iter){
+            topo_order.push_back(third_wait[iter]);
+            this->set_visited(third_wait[iter], this->trav_id());
+        }
 
         if (start_signal)
          {
@@ -455,7 +459,15 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                                                   /*2*/
                                                   else if (fin_inp != n)
                                                   {
-                                                      if (my_ntk.is_ci(fin_inp))
+                                                      if (const auto fc = fanins(my_ntk, fon); my_ntk.is_maj(fon) && fc.fanin_nodes.size()>2)
+                                                      {
+                                                          if (this->visited(n) != this->trav_id())
+                                                          {
+                                                              third_wait.push_back(n);
+                                                              this->set_visited(n, this->trav_id());
+                                                          }
+                                                      }
+                                                      else if (my_ntk.is_ci(fin_inp))
                                                       {
                                                           if (is_fan_out)
                                                           {
@@ -503,6 +515,7 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
     std::vector<node> topo_wait;
     std::vector<node> wait;
     std::vector<node> second_wait;
+    std::vector<node> third_wait;
     std::vector<node> output_node;
     std::vector<node> high_fan_out_node;
 

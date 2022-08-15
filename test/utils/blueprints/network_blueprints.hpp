@@ -515,13 +515,16 @@ Ntk fanout_inv_blc()
 }
 
 template <typename Ntk>
-Ntk TESTa()
+Ntk TEST_maj()
 {
     Ntk ntk{};
     const auto x1    = ntk.create_pi("a");
     const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("d");
 
-    const auto a1 = ntk.create_and(x1, x2);
+    const auto m1 = ntk.create_maj(x1, x2, x3);
+    const auto a1 = ntk.create_and(m1, x4);
 
     ntk.create_po(a1, "f");
 
