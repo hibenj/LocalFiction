@@ -124,7 +124,10 @@ mockturtle::signal<Lyt> buffer_south_case_two(Lyt& layout, const tile<Lyt>& src,
     pre_clock = layout.get_clock_number({pre2_t});
     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
+    pre2_t = static_cast<tile<Lyt>>(wire_west(layout, pre2_t, {pre2_t.x - 2, pre2_t.y}));
+    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
+    pre_clock = layout.get_clock_number({pre2_t});
+    pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
 
@@ -164,10 +167,7 @@ mockturtle::signal<Lyt> buffer_east_case_one(Lyt& layout, const tile<Lyt>& src, 
 template <typename Lyt>
 mockturtle::signal<Lyt> buffer_east_case_two(Lyt& layout, const tile<Lyt>& src, unsigned char pre_clock)
 {
-    auto pre2_t = static_cast<tile<Lyt>>(wire_east(layout, src, {src.x + 2, src.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-    pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
+    auto pre2_t = static_cast<tile<Lyt>>(wire_south(layout, src, {src.x, src.y + 2}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
     pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
@@ -186,6 +186,9 @@ mockturtle::signal<Lyt> buffer_east_case_two(Lyt& layout, const tile<Lyt>& src, 
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
     pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 1}));
+    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
+    pre_clock = layout.get_clock_number({pre2_t});
+    pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
 
     return static_cast<mockturtle::signal<Lyt>>(pre2_t);
@@ -659,9 +662,9 @@ class orthogonal_new_impl
 
         std::cout<<"Inverter_Flag"<<ctn.color_ntk.isFo_inv_flag()<<std::endl;
 
-        std::vector<unsigned __int64> resolve_rows;
+        std::vector<std::pair<unsigned __int64, unsigned __int64>> resolve_rows;
 
-        std::vector<unsigned __int64> resolve_columns;
+        std::vector<std::pair<unsigned __int64, unsigned __int64>> resolve_columns;
 
 
 #if (PROGRESS_BARS)
@@ -675,11 +678,42 @@ class orthogonal_new_impl
                 // do not place constants
                 if (!ctn.color_ntk.is_constant(n))
                 {
+                    //Resolve conflicts with Majority buffers
+                    ctn.color_ntk.foreach_fanin(n, [&](const auto& fin)
+                                                {
+                                                    auto fin_del = ntk.get_node(fin);
+                                                    if(ctn.color_ntk.color(n)==ctn.color_east)
+                                                    {
+                                                        auto pre_t = static_cast<tile<Lyt>>(node2pos[fin_del]);
+                                                        for (const auto &item : resolve_rows) {
+                                                            if (item.first == pre_t.y) {
+                                                                pre_t = static_cast<tile<Lyt>>(wire_east(layout, pre_t, {item.second, item.first}));
+                                                                node2pos[fin_del] = wire_south(layout, pre_t, {pre_t.x, latest_pos.y});
+                                                                ++latest_pos.y;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    if(ctn.color_ntk.color(n)==ctn.color_south)
+                                                    {
+                                                        auto pre_t = static_cast<tile<Lyt>>(node2pos[fin_del]);
+
+                                                        for (const auto &item : resolve_columns) {
+                                                            if (item.first == pre_t.x) {
+                                                                pre_t = static_cast<tile<Lyt>>(wire_south(layout, pre_t, {item.first, item.second}));
+                                                                node2pos[fin_del] = wire_east(layout, pre_t, {latest_pos.x, pre_t.y});
+                                                                ++latest_pos.x;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                });
+
                     // if node is a PI, move it to its correct position
                     if (ctn.color_ntk.is_pi(n))
                     {
                         /**NEW CODE
-                         * !!new latest_pos for inputs needed
+                         * !!new latest_pos for inputs
                          * **/
                         /*Placing Inputs in first Column*/
                         node2pos[n] = layout.move_node(pi2node[n], {latest_pos_inputs});
@@ -688,34 +722,150 @@ class orthogonal_new_impl
                         //++latest_pos.y;
                         ++latest_pos_inputs.y;
                     }
-                    /**NEW CODE MAJORITY GATES PLACEMENT**/
+                    /**NEW CODE
+                     * MAJORITY GATES PLACEMENT
+                     * **/
                     else if(const auto fc = fanins(ctn.color_ntk, n); ctn.color_ntk.is_maj(n) && fc.fanin_nodes.size()>2)
                     {
-                        //const auto fc = fanins(ctn.color_ntk, n);
+                        // const auto fc = fanins(ctn.color_ntk, n);
                         const auto &pre1 = fc.fanin_nodes[0], pre2 = fc.fanin_nodes[1], pre3 = fc.fanin_nodes[2];
 
                         auto pre1_t = static_cast<tile<Lyt>>(node2pos[pre1]),
                              pre2_t = static_cast<tile<Lyt>>(node2pos[pre2]),
                              pre3_t = static_cast<tile<Lyt>>(node2pos[pre3]);
 
-                        tile<Lyt>  t{}, t1{}, t2{}, t3{};
+                        tile<Lyt> t{}, t1{}, t2{}, t3{};
 
+                        auto maj_buf = majority_buffer(ctn.color_ntk, n);
+                        for (int n_buf = 0; n_buf < maj_buf.size(); ++n_buf)
+                        {
+                            std::cout << "maj buf " << maj_buf[n_buf] << std::endl;
+                        }
+
+                        // Majority gates placed south are just wired south and then placed east (this is due to the properties of the majority delay network)
                         if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_south)
                         {
-                            pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, latest_pos.y+1}));
+                            pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, latest_pos.y + 1}));
                             pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre1_t.y + 1}));
                             pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, pre2_t.y + 1}));
                         }
 
-                        //pre1_t is northern tile
-                        //pre2_t is middle tile
-                        //pre3_t is southern tile
+                        // pre1_t is northern tile
+                        // pre2_t is middle tile
+                        // pre3_t is southern tile
                         if (pre2_t.y < pre1_t.y)
+                        {
                             std::swap(pre1_t, pre2_t);
+                            std::swap(maj_buf[0], maj_buf[1]);
+                        }
                         if (pre3_t.y < pre1_t.y)
+                        {
                             std::swap(pre1_t, pre3_t);
+                            std::swap(maj_buf[0], maj_buf[2]);
+                        }
                         if (pre3_t.y < pre2_t.y)
+                        {
                             std::swap(pre2_t, pre3_t);
+                            std::swap(maj_buf[1], maj_buf[2]);
+                        }
+
+                        /**wire
+                             * majority_buffer
+                             * east**/
+                        for(int path_n = maj_buf.size()-1; path_n >= 0 ; --path_n)
+                        {
+                            if(maj_buf[path_n] >= 1)
+                            {
+                                if(path_n == 2)
+                                {
+                                    /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
+                                    pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {latest_pos.x + 1, pre3_t.y}));
+                                    std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre3_t.y+1, pre3_t.x);
+                                    resolve_rows.push_back(row_resolve_to_column);
+
+
+                                    auto pre_clock = layout.get_clock_number({pre3_t});
+                                    for(int iter = maj_buf[path_n]; iter > 0; --iter)
+                                    {
+                                        pre3_t =
+                                            static_cast<tile<Lyt>>(buffer_east_case_one(layout, pre3_t, pre_clock));
+                                    }
+
+                                    latest_pos.x = pre3_t.x+1;
+                                }
+                                else if(path_n == 1)
+                                {
+                                    if(maj_buf[2] >= 1)
+                                    {
+                                        pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, pre3_t.y+2}));
+                                    }
+                                    else
+                                    {
+                                        for (const auto &item : resolve_rows) {
+                                            if (item.first == pre3_t.y) {
+                                                pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {item.second, item.first}));
+                                                pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, latest_pos.y}));
+                                                ++latest_pos.y;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
+                                    pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
+                                    std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
+                                    resolve_rows.push_back(row_resolve_to_column);
+
+
+                                    auto pre_clock = layout.get_clock_number({pre2_t});
+                                    for(int iter = maj_buf[path_n]; iter > 0; --iter)
+                                    {
+                                        pre2_t =
+                                            static_cast<tile<Lyt>>(buffer_east_case_one(layout, pre2_t, pre_clock));
+                                    }
+
+                                    latest_pos.x = pre2_t.x+1;
+                                }
+                                else
+                                {
+                                    if(maj_buf[1] >= 1)
+                                    {
+                                        pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y+2}));
+                                    }
+                                    else
+                                    {
+                                        for (const auto &item : resolve_rows) {
+                                            if (item.first == pre2_t.y) {
+                                                pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {item.second, item.first}));
+                                                pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, latest_pos.y}));
+                                                ++latest_pos.y;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+
+                                    pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
+                                    std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
+                                    resolve_rows.push_back(row_resolve_to_column);
+
+
+                                    auto pre_clock = layout.get_clock_number({pre1_t});
+                                    for(int iter = maj_buf[path_n]; iter > 0; --iter)
+                                    {
+                                        pre1_t =
+                                            static_cast<tile<Lyt>>(buffer_east_case_two(layout, pre1_t, pre_clock));
+                                    }
+
+                                    latest_pos.x = pre1_t.x+1;
+
+                                    //because buffer is 2 tiles wide in y-direction
+                                    ++latest_pos.y;
+                                }
+                            }
+                        }
+                        /****************************************************************************************************************/
+
 
                         //Dimensions of majority gate are [4, 7]
                         //Three starting points of the majority input network
@@ -886,7 +1036,7 @@ class orthogonal_new_impl
 
                         auto maj_buf = majority_buffer(ctn.color_ntk, n);
                         for(int n_buf = 0; n_buf < maj_buf.size(); ++n_buf){
-                            std::cout << "First Element of maj buf" << maj_buf[n_buf] << std::endl;
+                            std::cout << "maj buf: " << maj_buf[n_buf] << std::endl;
                         }
 
                         /**insert buffer when a fan-out has two same colored outputs
@@ -942,7 +1092,10 @@ class orthogonal_new_impl
                                     if(path_n == 0)
                                     {
                                         /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
+                                        std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
+                                        resolve_rows.push_back(row_resolve_to_column);
                                         pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
+
 
                                         auto pre_clock = layout.get_clock_number({pre1_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
@@ -955,14 +1108,13 @@ class orthogonal_new_impl
 
                                         t = {pre1_t.x, t.y};
 
-                                        resolve_rows.push_back(pre1_t.y+1);
-
                                         latest_pos.x = pre1_t.x+1;
                                     }
                                     else
                                     {
-                                        std::cout<<n<<"T "<<"X: "<<t.x<<"Y: "<<t.y<<std::endl;
-                                        pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t.x, pre2_t.y}));
+                                        pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t.x + 1, pre2_t.y}));
+                                        std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
+                                        resolve_rows.push_back(row_resolve_to_column);
 
                                         auto pre_clock = layout.get_clock_number({pre2_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
@@ -1071,6 +1223,8 @@ class orthogonal_new_impl
                                     if(path_n == 0)
                                     {
                                         pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, t.y}));
+                                        std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre1_t.x + 1, pre1_t.y);
+                                        resolve_rows.push_back(column_resolve_to_row);
                                         auto pre_clock = layout.get_clock_number({pre1_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
                                         {
@@ -1090,15 +1244,18 @@ class orthogonal_new_impl
                                     }
                                     else
                                     {
+                                        /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
+                                        std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre2_t.x + 1, pre2_t.y);
+                                        resolve_rows.push_back(column_resolve_to_row);
                                         pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
+
                                         auto pre_clock = layout.get_clock_number({pre2_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
                                         {
                                             pre2_t = static_cast<tile<Lyt>>(
                                                 buffer_south_case_two(layout, pre2_t, pre_clock));
                                         }
-                                        /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
-                                        resolve_columns.push_back(pre2_t.x+1);
+
 
                                         t = {t.x, pre2_t.y};
                                         latest_pos.y = pre2_t.y+1;
