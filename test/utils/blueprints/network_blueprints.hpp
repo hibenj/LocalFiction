@@ -515,7 +515,7 @@ Ntk fanout_inv_blc()
 }
 
 template <typename Ntk>
-Ntk TEST_maj()
+Ntk TEST_maj_one_buf()
 {
     Ntk ntk{};
     const auto x1    = ntk.create_pi("a");
@@ -527,6 +527,56 @@ Ntk TEST_maj()
     const auto a1 = ntk.create_and(m1, x4);
 
     ntk.create_po(a1, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk TEST_maj_two_buf()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+
+    const auto n1  = ntk.create_not(x1);
+    const auto n2  = ntk.create_not(x2);
+    const auto n3  = ntk.create_not(x3);
+
+    const auto m1 = ntk.create_maj(n1, n2, n3);
+    const auto a1 = ntk.create_and(x1, x2);
+    const auto o1 = ntk.create_or(x2, x3);
+
+    const auto a2 = ntk.create_and(m1, a1);
+    const auto a3 = ntk.create_and(a1, o1);
+
+    const auto o2 = ntk.create_or(a2, a3);
+
+    ntk.create_po(o2, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk TEST_maj_maj_buf()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+
+    const auto n1  = ntk.create_not(x1);
+    const auto n2  = ntk.create_not(x2);
+    const auto n3  = ntk.create_not(x3);
+
+    const auto m1 = ntk.create_maj(n1, n2, n3);
+
+    const auto a1 = ntk.create_and(x1, x2);
+    const auto a2 = ntk.create_and(x2, x3);
+
+    const auto m2 = ntk.create_maj(m1, a1, a2);
+
+    ntk.create_po(m2, "f");
 
     return ntk;
 }
@@ -548,6 +598,23 @@ Ntk TESTb()
     const auto a5 = ntk.create_and(a3, a4);
 
     ntk.create_po(a5, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk mini()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+
+    const auto a1 = ntk.create_and(x1, x2);
+    //const auto a2 = ntk.create_and(x2, x3);
+    const auto a3 = ntk.create_and(a1, x3);
+
+    ntk.create_po(a3, "f");
 
     return ntk;
 }

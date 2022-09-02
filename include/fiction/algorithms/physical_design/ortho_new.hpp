@@ -124,12 +124,13 @@ mockturtle::signal<Lyt> buffer_south_case_two(Lyt& layout, const tile<Lyt>& src,
     pre_clock = layout.get_clock_number({pre2_t});
     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
+    pre_clock = layout.get_clock_number({pre2_t});
     pre2_t = static_cast<tile<Lyt>>(wire_west(layout, pre2_t, {pre2_t.x - 2, pre2_t.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
+    /*layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
+    pre_clock = layout.get_clock_number({pre2_t});*/
 
     return static_cast<mockturtle::signal<Lyt>>(pre2_t);
 }
@@ -601,7 +602,7 @@ std::vector<int> majority_buffer(const Ntk& ntk, mockturtle::node<Ntk> n) noexce
                                           int path_delay = 0;
                                           for (int j = 0; j < node_paths[i].size(); ++j)
                                           {
-                                              if (ntk.is_maj(node_paths[i][j].target))
+                                              if (const auto ft = fanins(ntk, node_paths[i][j].target); ntk.is_maj(node_paths[i][j].target) && ft.fanin_nodes.size()>2)
                                               {
                                                   ++path_delay;
                                               }
@@ -901,6 +902,20 @@ class orthogonal_new_impl
                         pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t2.x + 1, pre2_t.y}));
                         pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {t3.x + 1, pre3_t.y}));
 
+                        // Majority gates placed east need to be placed south as well because of the non-uniformity of the clocking
+                        if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_east && latest_pos.y > 3)
+                        {
+                            /*pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + latest_pos.y-2}));
+                            pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + latest_pos.y-2}));
+                            pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, pre3_t.y + latest_pos.y-2}));*/
+
+                            t1 = {t1.x, t1.y + latest_pos.y-2};
+                            t2 = {t2.x, t2.y + latest_pos.y-2};
+                            t3 = {t2.x, t3.y + latest_pos.y-2};
+
+                            t = {t.x, t.y + latest_pos.y-2};
+                        }
+
                         //Delay Network
                         //T1
                         pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, t1.y+1}));
@@ -947,7 +962,7 @@ class orthogonal_new_impl
                         std::cout<<"Color MAj gate: "<<(ctn.color_ntk.color(n))<<std::endl;
 
 
-                        latest_pos.x = t.x;
+                        latest_pos.x = t.x + 1;
                         latest_pos.y = t.y + 2;
 
                     }
@@ -1166,10 +1181,10 @@ class orthogonal_new_impl
 
                                     // use larger x position of predecessors
                                     t = {latest_pos.x, pre2_t.y};
-                                    std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
+                                    /*std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
                                     std::cout<<n<<"Pre1: "<<pre1<<std::endl;
                                     std::cout<<n<<"Pre2: "<<pre2<<std::endl;
-                                    std::cout<<n<<"color: "<<"south"<<std::endl;
+                                    std::cout<<n<<"color: "<<"south"<<std::endl;*/
                                     ++latest_pos.x;
                                 }
                                 else
@@ -1179,10 +1194,10 @@ class orthogonal_new_impl
 
                                     // use larger x position of predecessors
                                     t = {pre1_t.x, pre2_t.y};
-                                    std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
+                                    /*std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
                                     std::cout<<n<<"Pre1: "<<pre1<<std::endl;
                                     std::cout<<n<<"Pre2: "<<pre2<<std::endl;
-                                    std::cout<<n<<"color: "<<"south"<<std::endl;
+                                    std::cout<<n<<"color: "<<"south"<<std::endl;*/
                                 }
                                 if(pre2_t.y+1>latest_pos.y)
                                 {
@@ -1222,9 +1237,12 @@ class orthogonal_new_impl
                                 {
                                     if(path_n == 0)
                                     {
-                                        pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, t.y}));
+                                        pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, t.y + 2}));
+                                        std::cout<<"wire to "<<"X: "<<pre1_t.x<<"Y: "<<pre1_t.y<<std::endl;
+
                                         std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre1_t.x + 1, pre1_t.y);
                                         resolve_rows.push_back(column_resolve_to_row);
+
                                         auto pre_clock = layout.get_clock_number({pre1_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
                                         {
@@ -1241,13 +1259,16 @@ class orthogonal_new_impl
 
                                         //because buffer is 2 tiles wide in x-direction
                                         ++latest_pos.x;
+                                        std::cout<<"latest.pos "<<"X: "<<latest_pos.x<<"Y: "<<latest_pos.y<<std::endl;
                                     }
                                     else
                                     {
-                                        /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
+                                        //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
                                         std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre2_t.x + 1, pre2_t.y);
                                         resolve_rows.push_back(column_resolve_to_row);
+
                                         pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
+                                        std::cout<<"wire to "<<"X: "<<pre2_t.x<<"Y: "<<pre2_t.y<<std::endl;
 
                                         auto pre_clock = layout.get_clock_number({pre2_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
@@ -1259,7 +1280,7 @@ class orthogonal_new_impl
 
                                         t = {t.x, pre2_t.y};
                                         latest_pos.y = pre2_t.y+1;
-                                        /*std::cout<<n<<"T "<<"X: "<<t.x<<"Y: "<<t.y<<std::endl;*/
+                                        std::cout<<n<<"T "<<"X: "<<t.x<<"Y: "<<t.y<<std::endl;
                                     }
                                 }
                             }
@@ -1347,6 +1368,7 @@ class orthogonal_new_impl
                                                  fmt::format("po{}", po_counter++),
                                              po_tile);
                         }
+                        std::cout<<n<<"PO plaziert auf"<<"X:"<<po_tile.x<<"Y:"<<po_tile.y<<std::endl;
                     }
                 }
 

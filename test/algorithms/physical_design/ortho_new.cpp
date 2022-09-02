@@ -107,12 +107,12 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::TEST_maj<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::maj1_network<mockturtle::names_view<technology_network>>();
     mux21.set_network_name("mux21");
 
     auto layout = orthogonal_new<gate_layout>(mux21);
 
-    //gate_level_drvs(layout);
+    gate_level_drvs(layout);
 
     /*std::cout<<"Clock number on [0, 0, 0]"<<layout.get_clock_number({0, 0,0})<<std::endl;
     std::cout<<"Clock number on [1, 0, 0]"<<layout.get_clock_number({1, 0,0})<<std::endl;
@@ -128,6 +128,71 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
     std::cout<<"Clock number on [8, 1, 0]"<<layout.get_clock_number({8, 1,0})<<std::endl;
     std::cout<<"Clock number on [8, 0, 0]"<<layout.get_clock_number({8, 0,0})<<std::endl;
     std::cout<<"Clock number on [9, 0, 0]"<<layout.get_clock_number({9, 0,0})<<std::endl;*/
+
+
+    // network name
+    CHECK(layout.get_layout_name() == "mux21");
+
+    // PI names
+    //CHECK(layout.get_name(layout.pi_at(0)) == "c");  // first PI
+    //CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
+    //CHECK(layout.get_name(layout.pi_at(2)) == "a");  // third PI
+
+    //std::cout<<layout.get_node(0);
+
+    /*CHECK(layout.get_name(layout.pi_at(0)) == "a");  // first PI
+    CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
+    CHECK(layout.get_name(layout.pi_at(2)) == "c");  // third PI*/
+    /*std::cout<<"stats x"<<layout.<<std::endl;
+    std::cout<<"stats y"<<<<std::endl;*/
+
+    // PO names
+    CHECK(layout.get_output_name(0) == "f");
+}
+
+TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
+{
+    using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
+    //cube::coord_t
+
+    auto mux21 = blueprints::TEST_maj_two_buf<mockturtle::names_view<technology_network>>();
+    mux21.set_network_name("mux21");
+
+    auto layout = orthogonal_new<gate_layout>(mux21);
+
+    gate_level_drvs(layout);
+
+    //print_gate_level_layout(std::cout, layout);
+
+    /*std::cout<<"Clock number on [13, 11, 0]"<<layout.get_clock_number({13, 11, 0})<<std::endl;
+    std::cout<<"Clock number on [13, 12, 0]"<<layout.get_clock_number({13, 12, 0})<<std::endl;
+    std::cout<<"Clock number on [13, 13, 0]"<<layout.get_clock_number({13, 13, 0})<<std::endl;
+    std::cout<<"Clock number on [13, 14, 0]"<<layout.get_clock_number({13, 14, 0})<<std::endl;
+    std::cout<<"Clock number on [13, 15, 0]"<<layout.get_clock_number({13, 15, 0})<<std::endl;
+    std::cout<<"Clock number on [13, 16, 0]"<<layout.get_clock_number({13, 16, 0})<<std::endl;
+    std::cout<<"Clock number on [13, 17, 0]"<<layout.get_clock_number({13, 17, 0})<<std::endl;
+    std::cout<<"Clock number on [13, 18, 0]"<<layout.get_clock_number({13, 18, 0})<<std::endl;
+    std::cout<<"Clock number on [13, 19, 0]"<<layout.get_clock_number({13, 19, 0})<<std::endl;
+    std::cout<<"Clock number on [14, 19, 0]"<<layout.get_clock_number({14, 19,0})<<std::endl;
+    std::cout<<"Clock number on [14, 20, 0]"<<layout.get_clock_number({14, 20,0})<<std::endl;
+    std::cout<<"Clock number on [13, 20, 0]"<<layout.get_clock_number({13, 20,0})<<std::endl;
+    std::cout<<"Clock number on [13, 21, 0]"<<layout.get_clock_number({13, 21,0})<<std::endl;
+    std::cout<<"Clock number on [14, 21, 0]"<<layout.get_clock_number({14, 21,0})<<std::endl;
+    std::cout<<"Clock number on [14, 22, 0]"<<layout.get_clock_number({14, 22,0})<<std::endl;
+    std::cout<<"Clock number on [13, 22, 0]"<<layout.get_clock_number({13, 22,0})<<std::endl;
+    std::cout<<"Clock number on [13, 23, 0]"<<layout.get_clock_number({13, 23,0})<<std::endl;
+    std::cout<<"Clock number on [14, 23, 0]"<<layout.get_clock_number({14, 23,0})<<std::endl;
+    std::cout<<"Clock number on [15, 23, 0]"<<layout.get_clock_number({15, 23,0})<<std::endl;*/
+
+    /*std::cout<<"Clock number on [12, 17, 0]"<<layout.get_clock_number({12, 17,0})<<std::endl;
+    std::cout<<"Clock number on [12, 18, 0]"<<layout.get_clock_number({12, 18,0})<<std::endl;
+    std::cout<<"Clock number on [12, 19, 0]"<<layout.get_clock_number({12, 19,0})<<std::endl;
+    std::cout<<"Clock number on [12, 20, 0]"<<layout.get_clock_number({12, 20,0})<<std::endl;
+    std::cout<<"Clock number on [12, 21, 0]"<<layout.get_clock_number({12, 21,0})<<std::endl;
+    std::cout<<"Clock number on [12, 22, 0]"<<layout.get_clock_number({12, 22,0})<<std::endl;
+    std::cout<<"Clock number on [12, 23, 0]"<<layout.get_clock_number({12, 23,0})<<std::endl;*/
+
+
 
 
     // network name
