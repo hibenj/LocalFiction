@@ -80,26 +80,32 @@ mockturtle::signal<Lyt> buffer_south_case_one(Lyt& layout, const tile<Lyt>& src,
     auto pre1_t = static_cast<tile<Lyt>>(wire_east(layout, src, {src.x + 2, src.y}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
+
     pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
+
     pre1_t = static_cast<tile<Lyt>>(wire_west(layout, pre1_t, {pre1_t.x - 2, pre1_t.y}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
+
     pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
+
     pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
+
     pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
+
     pre1_t = static_cast<tile<Lyt>>(wire_west(layout, pre1_t, {pre1_t.x - 2, pre1_t.y}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
-    pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
+    /*pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
+    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);*/
 
     return static_cast<mockturtle::signal<Lyt>>(pre1_t);
 }
@@ -110,24 +116,31 @@ mockturtle::signal<Lyt> buffer_south_case_two(Lyt& layout, const tile<Lyt>& src,
     auto pre2_t = static_cast<tile<Lyt>>(wire_east(layout, src, {src.x + 2, src.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_west(layout, pre2_t, {pre2_t.x - 2, pre2_t.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_west(layout, pre2_t, {pre2_t.x - 2, pre2_t.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
     /*layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});*/
@@ -141,24 +154,49 @@ mockturtle::signal<Lyt> buffer_east_case_one(Lyt& layout, const tile<Lyt>& src, 
     auto pre1_t = static_cast<tile<Lyt>>(wire_south(layout, src, {src.x, src.y + 2}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
+
     pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
-    pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y -1}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
+
+    if(pre1_t.y == 1)
+    {
+        pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y - 1}));
+        layout.assign_clock_number({pre1_t.x, pre1_t.y, 0}, pre_clock + 1);
+        pre_clock = layout.get_clock_number({pre1_t});
+    }
+    else
+    {
+        pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y - 2}));
+        layout.assign_clock_number({pre1_t.x, pre1_t.y, 0}, pre_clock + 1);
+        pre_clock = layout.get_clock_number({pre1_t});
+    }
+
     pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
+
     pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
+
     pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre1_t});
-    pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y - 1}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
+
+    if(pre1_t.y == 1)
+    {
+        pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y - 1}));
+        layout.assign_clock_number({pre1_t.x, pre1_t.y, 0}, pre_clock + 1);
+        pre_clock = layout.get_clock_number({pre1_t});
+    }
+    else
+    {
+        pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y - 2}));
+        layout.assign_clock_number({pre1_t.x, pre1_t.y, 0}, pre_clock + 1);
+        pre_clock = layout.get_clock_number({pre1_t});
+    }
+
     pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
     layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
 
@@ -171,24 +209,50 @@ mockturtle::signal<Lyt> buffer_east_case_two(Lyt& layout, const tile<Lyt>& src, 
     auto pre2_t = static_cast<tile<Lyt>>(wire_south(layout, src, {src.x, src.y + 2}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
-    pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 1}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
+
+    if(pre2_t.y == 1)
+    {
+        pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 1}));
+        layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
+        pre_clock = layout.get_clock_number({pre2_t});
+    }
+    else
+    {
+        pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 2}));
+        layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
+        pre_clock = layout.get_clock_number({pre2_t});
+    }
+
+
     pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
+
     pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
     pre_clock = layout.get_clock_number({pre2_t});
-    pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 1}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
+
+    if(pre2_t.y == 1)
+    {
+        pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 1}));
+        layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
+        pre_clock = layout.get_clock_number({pre2_t});
+    }
+    else
+    {
+        pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 2}));
+        layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
+        pre_clock = layout.get_clock_number({pre2_t});
+    }
+
     pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
     layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
 
@@ -351,6 +415,7 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                     /*Has to be rewritten for Inputs with Fan-outs higher than two*/
                     bool already_painted = false;
                     bool all_inputs = false;
+
                     for(int i = 0; i <new_output_node.size(); ++i)
                     {
 
@@ -361,7 +426,33 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                             std::for_each(finc_fo.fanin_edges.cbegin(), finc_fo.fanin_edges.cend(),
                                           [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
                             paint_if(ctn, new_output_node[i], color);
+
+                            if(new_output_node.size()>1)
+                            {
+                                i = 1 - i;
+
+                                //Color other fan-out south
+                                color = ctn.color_south;
+                                const auto finc_other = fanin_edges(ctn.color_ntk, new_output_node[i]);
+                                std::for_each(finc_other.fanin_edges.cbegin(), finc_other.fanin_edges.cend(),
+                                              [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
+                                paint_if(ctn, new_output_node[i], color);
+                            }
+
                         }
+                    }
+
+                    for(int i = 0; i <new_output_node.size(); ++i)
+                    {
+
+                        /*if(ntk.is_maj(new_output_node[i]))
+                        {
+                            auto color = ctn.color_east;
+                            const auto finc_fo = fanin_edges(ctn.color_ntk, new_output_node[i]);
+                            std::for_each(finc_fo.fanin_edges.cbegin(), finc_fo.fanin_edges.cend(),
+                                          [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
+                            paint_if(ctn, new_output_node[i], color);
+                        }*/
 
                         ntk.foreach_fanin(
                             new_output_node[i],
@@ -680,7 +771,7 @@ class orthogonal_new_impl
                 if (!ctn.color_ntk.is_constant(n))
                 {
                     //Resolve conflicts with Majority buffers
-                    ctn.color_ntk.foreach_fanin(n, [&](const auto& fin)
+                    /*ctn.color_ntk.foreach_fanin(n, [&](const auto& fin)
                                                 {
                                                     auto fin_del = ntk.get_node(fin);
                                                     if(ctn.color_ntk.color(n)==ctn.color_east)
@@ -708,7 +799,7 @@ class orthogonal_new_impl
                                                             }
                                                         }
                                                     }
-                                                });
+                                                });*/
 
                     // if node is a PI, move it to its correct position
                     if (ctn.color_ntk.is_pi(n))
@@ -738,10 +829,10 @@ class orthogonal_new_impl
                         tile<Lyt> t{}, t1{}, t2{}, t3{};
 
                         auto maj_buf = majority_buffer(ctn.color_ntk, n);
-                        for (int n_buf = 0; n_buf < maj_buf.size(); ++n_buf)
+                        /*for (int n_buf = 0; n_buf < maj_buf.size(); ++n_buf)
                         {
                             std::cout << "maj buf " << maj_buf[n_buf] << std::endl;
-                        }
+                        }*/
 
                         // Majority gates placed south are just wired south and then placed east (this is due to the properties of the majority delay network)
                         if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_south)
@@ -779,7 +870,7 @@ class orthogonal_new_impl
                             {
                                 if(path_n == 2)
                                 {
-                                    /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
+                                    //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
                                     pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {latest_pos.x + 1, pre3_t.y}));
                                     std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre3_t.y+1, pre3_t.x);
                                     resolve_rows.push_back(row_resolve_to_column);
@@ -812,7 +903,7 @@ class orthogonal_new_impl
                                         }
                                     }
 
-                                    /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
+                                    //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
                                     pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
                                     std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
                                     resolve_rows.push_back(row_resolve_to_column);
@@ -890,8 +981,8 @@ class orthogonal_new_impl
                         else
                         {
                             //pre3_t gives y coordinates
-                            t1 = {latest_pos.x + 2, pre3_t.y - 1};
-                            t2 = {latest_pos.x + 1, pre3_t.y - 4};
+                            t1 = {latest_pos.x + 3, pre3_t.y - 1};
+                            t2 = {latest_pos.x + 2, pre3_t.y - 4};
                             t3 = {latest_pos.x    , pre3_t.y    };
                         }
                         // coordinates of the majority gate
@@ -903,17 +994,24 @@ class orthogonal_new_impl
                         pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {t3.x + 1, pre3_t.y}));
 
                         // Majority gates placed east need to be placed south as well because of the non-uniformity of the clocking
-                        if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_east && latest_pos.y > 3)
+                        if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_east)
                         {
-                            /*pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + latest_pos.y-2}));
-                            pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + latest_pos.y-2}));
-                            pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, pre3_t.y + latest_pos.y-2}));*/
+                            if(t.y < latest_pos_inputs.y)
+                            {
+                                t1 = {t1.x, t1.y + latest_pos_inputs.y-2};
+                                t2 = {t2.x, t2.y + latest_pos_inputs.y-2};
+                                t3 = {t2.x, t3.y + latest_pos_inputs.y-2};
 
-                            t1 = {t1.x, t1.y + latest_pos.y-2};
-                            t2 = {t2.x, t2.y + latest_pos.y-2};
-                            t3 = {t2.x, t3.y + latest_pos.y-2};
+                                t = {t.x, t.y + latest_pos_inputs.y-2};
+                            }
+                            else if(latest_pos.y > 3)
+                            {
+                                t = {t.x, latest_pos.y+2};
 
-                            t = {t.x, t.y + latest_pos.y-2};
+                                t1 = {t1.x, t.y};
+                                t2 = {t2.x, t.y-3};
+                                t3 = {t2.x, t.y+1};
+                            }
                         }
 
                         //Delay Network
@@ -964,6 +1062,9 @@ class orthogonal_new_impl
 
                         latest_pos.x = t.x + 1;
                         latest_pos.y = t.y + 2;
+
+                        std::cout<<"latest_pos.x: "<<latest_pos.x<<std::endl;
+                        std::cout<<"latest_pos.y: "<<latest_pos.y<<std::endl;
 
                     }
                     // if n has only one fanin
@@ -1106,6 +1207,7 @@ class orthogonal_new_impl
                                 {
                                     if(path_n == 0)
                                     {
+                                        std::cout << "CASE: ONE" << '\n';
                                         /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
                                         std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
                                         resolve_rows.push_back(row_resolve_to_column);
@@ -1118,7 +1220,8 @@ class orthogonal_new_impl
                                             pre1_t =
                                                 static_cast<tile<Lyt>>(buffer_east_case_one(layout, pre1_t, pre_clock));
                                         }
-                                        //std::cout << "TYPE: " << typeid(pre_clock).name() << '\n';
+
+                                        //pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 5, pre1_t.y}));
 
 
                                         t = {pre1_t.x, t.y};
@@ -1127,6 +1230,8 @@ class orthogonal_new_impl
                                     }
                                     else
                                     {
+                                        std::cout << "CASE: TWO" << '\n';
+
                                         pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t.x + 1, pre2_t.y}));
                                         std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
                                         resolve_rows.push_back(row_resolve_to_column);
@@ -1238,7 +1343,7 @@ class orthogonal_new_impl
                                     if(path_n == 0)
                                     {
                                         pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, t.y + 2}));
-                                        std::cout<<"wire to "<<"X: "<<pre1_t.x<<"Y: "<<pre1_t.y<<std::endl;
+                                        //std::cout<<"wire to "<<"X: "<<pre1_t.x<<"Y: "<<pre1_t.y<<std::endl;
 
                                         std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre1_t.x + 1, pre1_t.y);
                                         resolve_rows.push_back(column_resolve_to_row);
@@ -1250,12 +1355,13 @@ class orthogonal_new_impl
                                                 buffer_south_case_one(layout, pre1_t, pre_clock));
                                         }
                                         //std::cout << "TYPE: " << typeid(pre_clock).name() << '\n';
+                                        /*pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 4}));*/
 
-                                        t = {t.x, pre1_t.y};
+                                        t = {t.x, pre1_t.y+1};
 
-                                        pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre1_t.y + 1}));
+                                        pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t.y + 1}));
 
-                                        latest_pos.y = pre1_t.y+1;
+                                        latest_pos.y = t.y+1;
 
                                         //because buffer is 2 tiles wide in x-direction
                                         ++latest_pos.x;
@@ -1268,7 +1374,7 @@ class orthogonal_new_impl
                                         resolve_rows.push_back(column_resolve_to_row);
 
                                         pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
-                                        std::cout<<"wire to "<<"X: "<<pre2_t.x<<"Y: "<<pre2_t.y<<std::endl;
+                                        //std::cout<<"wire to "<<"X: "<<pre2_t.x<<"Y: "<<pre2_t.y<<std::endl;
 
                                         auto pre_clock = layout.get_clock_number({pre2_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)

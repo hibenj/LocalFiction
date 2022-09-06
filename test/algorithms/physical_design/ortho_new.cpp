@@ -107,7 +107,7 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::maj1_network<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::TEST_maj_one_buf<mockturtle::names_view<technology_network>>();
     mux21.set_network_name("mux21");
 
     auto layout = orthogonal_new<gate_layout>(mux21);
@@ -155,7 +155,7 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::TEST_maj_two_buf<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::TEST_maj_e_s_buf<mockturtle::names_view<technology_network>>();
     mux21.set_network_name("mux21");
 
     auto layout = orthogonal_new<gate_layout>(mux21);
@@ -190,7 +190,10 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
     std::cout<<"Clock number on [12, 20, 0]"<<layout.get_clock_number({12, 20,0})<<std::endl;
     std::cout<<"Clock number on [12, 21, 0]"<<layout.get_clock_number({12, 21,0})<<std::endl;
     std::cout<<"Clock number on [12, 22, 0]"<<layout.get_clock_number({12, 22,0})<<std::endl;
-    std::cout<<"Clock number on [12, 23, 0]"<<layout.get_clock_number({12, 23,0})<<std::endl;*/
+    std::cout<<"Clock number on [12, 23, 0]"<<layout.get_clock_number({12, 23,0})<<std::endl;
+    std::cout<<"Clock number on [13, 23, 0]"<<layout.get_clock_number({13, 23,0})<<std::endl;
+    std::cout<<"Clock number on [14, 23, 0]"<<layout.get_clock_number({14, 23,0})<<std::endl;
+    std::cout<<"Clock number on [15, 23, 0]"<<layout.get_clock_number({15, 23,0})<<std::endl;*/
 
 
 
