@@ -5,13 +5,15 @@
 #ifndef FICTION_NETWORK_BLUEPRINTS_HPP
 #define FICTION_NETWORK_BLUEPRINTS_HPP
 
+#include <mockturtle/views/names_view.hpp>
+
 namespace blueprints
 {
 
 template <typename Ntk>
-Ntk maj1_network()
+mockturtle::names_view<Ntk> maj1_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto a = ntk.create_pi("a");
     const auto b = ntk.create_pi("b");
@@ -25,30 +27,9 @@ Ntk maj1_network()
 }
 
 template <typename Ntk>
-Ntk majAOIG_network()
+mockturtle::names_view<Ntk> maj4_network()
 {
-    Ntk ntk{};
-
-    const auto a = ntk.create_pi("a");
-    const auto b = ntk.create_pi("b");
-    const auto c = ntk.create_pi("c");
-
-    const auto a1 = ntk.create_and(a, b);
-    const auto a2 = ntk.create_and(a, c);
-    const auto a3 = ntk.create_and(b, c);
-
-    const auto o1 = ntk.create_or(a1, a2);
-    const auto o2 = ntk.create_or(o1, a3);
-
-    ntk.create_po(o2, "f");
-
-    return ntk;
-}
-
-template <typename Ntk>
-Ntk maj4_network()
-{
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto a = ntk.create_pi("a");
     const auto b = ntk.create_pi("b");
@@ -70,9 +51,9 @@ Ntk maj4_network()
 }
 
 template <typename Ntk>
-Ntk unbalanced_and_inv_network()
+mockturtle::names_view<Ntk> unbalanced_and_inv_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto a = ntk.create_pi("a");
     const auto b = ntk.create_pi("b");
@@ -86,9 +67,9 @@ Ntk unbalanced_and_inv_network()
 }
 
 template <typename Ntk>
-Ntk and_or_network()
+mockturtle::names_view<Ntk> and_or_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto a = ntk.create_pi("a");
     const auto b = ntk.create_pi("b");
@@ -103,9 +84,9 @@ Ntk and_or_network()
 }
 
 template <typename Ntk>
-Ntk multi_output_and_network()
+mockturtle::names_view<Ntk> multi_output_and_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto a = ntk.create_pi("a");
     const auto b = ntk.create_pi("b");
@@ -121,9 +102,9 @@ Ntk multi_output_and_network()
 }
 
 template <typename Ntk>
-Ntk nary_operation_network()
+mockturtle::names_view<Ntk> nary_operation_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi();
     const auto x2 = ntk.create_pi();
@@ -143,9 +124,9 @@ Ntk nary_operation_network()
 }
 
 template <typename Ntk>
-Ntk constant_gate_input_maj_network()
+mockturtle::names_view<Ntk> constant_gate_input_maj_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi();
     const auto x2 = ntk.create_pi();
@@ -160,9 +141,9 @@ Ntk constant_gate_input_maj_network()
 }
 
 template <typename Ntk>
-Ntk half_adder_network()
+mockturtle::names_view<Ntk> half_adder_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi("a");
     const auto x2 = ntk.create_pi("b");
@@ -177,9 +158,9 @@ Ntk half_adder_network()
 }
 
 template <typename Ntk>
-Ntk full_adder_network()
+mockturtle::names_view<Ntk> full_adder_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi("a");
     const auto x2 = ntk.create_pi("b");
@@ -199,9 +180,9 @@ Ntk full_adder_network()
 }
 
 template <typename Ntk>
-Ntk mux21_network()
+mockturtle::names_view<Ntk> mux21_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi("a");
     const auto x2 = ntk.create_pi("b");
@@ -218,9 +199,9 @@ Ntk mux21_network()
 }
 
 template <typename Ntk>
-Ntk se_coloring_corner_case_network()
+mockturtle::names_view<Ntk> se_coloring_corner_case_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi("x1");
     const auto x2 = ntk.create_pi("x2");
@@ -242,9 +223,9 @@ Ntk se_coloring_corner_case_network()
 }
 
 template <typename Ntk>
-Ntk fanout_substitution_corner_case_network()
+mockturtle::names_view<Ntk> fanout_substitution_corner_case_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi("x1");
 
@@ -266,9 +247,9 @@ Ntk fanout_substitution_corner_case_network()
 }
 
 template <typename Ntk>
-Ntk inverter_network()
+mockturtle::names_view<Ntk> inverter_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi("x1");
 
@@ -284,9 +265,9 @@ Ntk inverter_network()
 }
 
 template <typename Ntk>
-Ntk clpl()
+mockturtle::names_view<Ntk> clpl()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi("x1");
     const auto x2 = ntk.create_pi("x2");
@@ -325,23 +306,23 @@ Ntk one_to_five_path_difference_network()
 {
     Ntk ntk{};
 
-    const auto x1 = ntk.create_pi("x1");
-    const auto x2 = ntk.create_pi("x2");
+    const auto x1 = ntk.create_pi();
+    const auto x2 = ntk.create_pi();
 
     const auto p1 = ntk.create_buf(x1);
     const auto p2 = ntk.create_buf(ntk.create_buf(ntk.create_buf(ntk.create_buf(ntk.create_buf(x2)))));
 
     const auto a = ntk.create_and(p1, p2);
 
-    ntk.create_po(a, "f");
+    ntk.create_po(a);
 
     return ntk;
 }
 
 template <typename Ntk>
-Ntk nand_xnor_network()
+mockturtle::names_view<Ntk> nand_xnor_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi("x1");
     const auto x2 = ntk.create_pi("x2");
@@ -358,9 +339,9 @@ Ntk nand_xnor_network()
 }
 
 template <typename Ntk>
-Ntk topolinano_network()
+mockturtle::names_view<Ntk> topolinano_network()
 {
-    Ntk ntk{};
+    mockturtle::names_view<Ntk> ntk{};
 
     const auto x1 = ntk.create_pi("x1");
     const auto x2 = ntk.create_pi("x2");
