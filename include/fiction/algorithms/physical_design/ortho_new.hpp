@@ -253,8 +253,8 @@ mockturtle::signal<Lyt> buffer_east_case_two(Lyt& layout, const tile<Lyt>& src, 
         pre_clock = layout.get_clock_number({pre2_t});
     }
 
-    pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
+    /*pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
+    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);*/
 
     return static_cast<mockturtle::signal<Lyt>>(pre2_t);
 }
@@ -723,7 +723,7 @@ class orthogonal_new_impl
 {
   public:
     orthogonal_new_impl(const Ntk& src, const orthogonal_physical_design_params& p, orthogonal_physical_design_stats& st) :
-            ntk{topo_view_input_sort{mockturtle::fanout_view{inverter_balancing(fanout_substitution<mockturtle::names_view<technology_network>>(src))}}},
+            ntk{topo_view_input_sort{mockturtle::fanout_view{inverter_balancing(fanout_substitution<mockturtle::names_view<mockturtle::sequential<technology_network>>>(src))}}},
             ps{p},
             pst{st}
     {}
@@ -838,8 +838,8 @@ class orthogonal_new_impl
                         if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_south)
                         {
                             pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, latest_pos.y + 1}));
-                            pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre1_t.y + 1}));
-                            pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, pre2_t.y + 1}));
+                            pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre1_t.y + 2}));
+                            pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, pre2_t.y + 2}));
                         }
 
                         // pre1_t is northern tile
@@ -1065,6 +1065,7 @@ class orthogonal_new_impl
 
                         std::cout<<"latest_pos.x: "<<latest_pos.x<<std::endl;
                         std::cout<<"latest_pos.y: "<<latest_pos.y<<std::endl;
+                        /*********************************************************************************************************************************************/
 
                     }
                     // if n has only one fanin
@@ -1232,7 +1233,7 @@ class orthogonal_new_impl
                                     {
                                         std::cout << "CASE: TWO" << '\n';
 
-                                        pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t.x + 1, pre2_t.y}));
+                                        pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t.x + 2, pre2_t.y}));
                                         std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
                                         resolve_rows.push_back(row_resolve_to_column);
 
@@ -1243,11 +1244,11 @@ class orthogonal_new_impl
                                                 static_cast<tile<Lyt>>(buffer_east_case_two(layout, pre2_t, pre_clock));
                                         }
 
-                                        t = {pre2_t.x, t.y};
+                                        t = {pre2_t.x + 1, t.y};
 
-                                        pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre2_t.x + 1, pre1_t.y}));
+                                        pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {t.x + 1, pre1_t.y}));
 
-                                        latest_pos.x = pre2_t.x+1;
+                                        latest_pos.x = t.x+1;
 
                                         //because buffer is 2 tiles wide in y-direction
                                         ++latest_pos.y;
@@ -1476,6 +1477,70 @@ class orthogonal_new_impl
                         }
                         std::cout<<n<<"PO plaziert auf"<<"X:"<<po_tile.x<<"Y:"<<po_tile.y<<std::endl;
                     }
+
+                    /***************************************************************Place Ris***************************************************************/
+                    if(!ctn.color_ntk.is_combinational())
+                    {
+                        //The RIs need to be placed in the same order as the ROs at the Inputs
+                        //Variable needed with order of ROs - order should be determined in input_sort
+                        auto num_ris = ctn.color_ntk.num_registers();
+                        auto n_s = node2pos[n];
+
+                        tile<Lyt> ri_tile{};
+
+                        // determine PO orientation
+                        if (is_eastern_po_orientation_available(ctn, n))
+                        {
+                            ++latest_pos.x;
+                            layout.resize({latest_pos.x-1, latest_pos.y-1, 1});
+                            //wire the RIs in a Diagonal
+                            ri_tile = layout.east(static_cast<tile<Lyt>>(n_s));
+                            ri_tile = layout.south(static_cast<tile<Lyt>>(n_s));
+                        }
+                        else
+                        {
+                            ++latest_pos.y;
+                            layout.resize({latest_pos.x-1, latest_pos.y-1, 1});
+                            //wire the RIs in a Diagonal
+                            ri_tile = layout.south(static_cast<tile<Lyt>>(n_s));
+                            ri_tile = layout.east(static_cast<tile<Lyt>>(n_s));
+                        }
+
+                        //Create RI on this tile: layout.create_ri function needed
+                        //
+                        //
+                        //
+                        //Wire RIs back to ROs
+                        int x = 1;
+                        switch(x) {
+                            case 1:
+                                // R1
+                                // wire east to latest_pos.x + 1
+                                // wire south to latest_pos.y + num_ris
+                                // wire west to if (ri.y - ro.y log2 = (ri.x - ri.x + num_ris) log2) {pos_inputs.x - 2 - 2*(2)} else {pos_inputs.x - 3 - 2*(2)}
+                                // wire north to corresponding ro.y
+                                // wire east to corresponding ro.x
+                                break;
+                            case 2:
+                                // R1
+                                // wire east to latest_pos.x + 1 + one cycle
+                                // wire south to latest_pos.y + num_ris - 1
+                                // wire west to if (ri.y - ro.y log2 = (ri.x - ri.x + num_ris) log2) {pos_inputs.x - 2 - 1*(2)} else {pos_inputs.x - 3 - 1*(2)}
+                                // wire north to corresponding ro.y
+                                // wire east to corresponding ro.x
+                                break;
+                            case 3:
+                                // R1
+                                // wire east to latest_pos.x + 1 + two cycles
+                                // wire south to latest_pos.y + num_ris - 2
+                                // wire west to if (ri.y - ro.y log2 = (ri.x - ri.x + num_ris) log2) {pos_inputs.x - 2 - 0*(2)} else {pos_inputs.x - 3 - 0*(2)}
+                                // wire north to corresponding ro.y
+                                // wire east to corresponding ro.x
+                                break;
+                        }
+
+                    }
+                    /***************************************************************Place Ris***************************************************************/
                 }
 
 #if (PROGRESS_BARS)
@@ -1500,7 +1565,7 @@ class orthogonal_new_impl
     }
 
   private:
-    topo_view_input_sort<mockturtle::fanout_view<mockturtle::names_view<technology_network>>> ntk;
+    topo_view_input_sort<mockturtle::fanout_view<mockturtle::names_view<mockturtle::sequential<technology_network>>>> ntk;
 
     orthogonal_physical_design_params ps;
     orthogonal_physical_design_stats& pst;

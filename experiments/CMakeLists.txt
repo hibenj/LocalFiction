@@ -28,6 +28,6 @@ file(GLOB_RECURSE FILENAMES *.cpp)
 
 foreach (filename ${FILENAMES})
     get_filename_component(basename ${filename} NAME_WE)
-    add_executable(${basename} ${filename})
+    add_executable(${basename} ${filename} ortho_new_experiments.cpp)
     target_link_libraries(${basename} PUBLIC fiction_experiments)
 endforeach ()

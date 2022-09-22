@@ -539,6 +539,61 @@ Ntk TEST_maj_two_buf()
 }
 
 template <typename Ntk>
+Ntk TEST_maj_reroute()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("d");
+    const auto x5    = ntk.create_pi("e");
+
+    const auto a1 = ntk.create_and(x1, x2);
+    const auto o1 = ntk.create_or(x1, x2);
+    const auto a2 = ntk.create_and(a1, o1);
+
+    const auto m1 = ntk.create_maj(x3, x4, x5);
+
+    const auto a3 = ntk.create_and(m1, o1);
+
+    const auto a4 = ntk.create_and(a2, a3);
+
+    ntk.create_po(a4, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk TEST_maj_reroute_aoig()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("d");
+    const auto x5    = ntk.create_pi("e");
+
+    const auto a1 = ntk.create_and(x1, x2);
+    const auto o1 = ntk.create_or(x1, x2);
+    const auto a2 = ntk.create_and(a1, o1);
+
+    //const auto m1 = ntk.create_maj(x3, x4, x5);
+    const auto a3 = ntk.create_and(x3, x4);
+    const auto a4 = ntk.create_and(x3, x5);
+    const auto a5 = ntk.create_and(x4, x5);
+    const auto o2 = ntk.create_or(a3, a4);
+    const auto m1 = ntk.create_or(o2, a5);
+
+    const auto a6 = ntk.create_and(m1, o1);
+
+    const auto a7 = ntk.create_and(a2, a6);
+
+    ntk.create_po(a7, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
 Ntk TEST_maj_e_s_buf()
 {
     Ntk ntk{};
@@ -687,6 +742,25 @@ Ntk FA()
 
     ntk.create_po(o1, "cout");
     ntk.create_po(xor2, "s");
+
+    return ntk;
+}
+
+template <typename Ntk>
+mockturtle::names_view<Ntk> seq_one()
+{
+    mockturtle::names_view<Ntk> ntk{};
+
+    const auto x1 = ntk.create_pi("a");
+
+    const auto r1_o = ntk.create_ro();
+
+    const auto xo1 = ntk.create_xor(x1, r1_o);
+
+    ntk.create_ri(xo1);
+
+    ntk.create_po(xo1, "cout");
+
 
     return ntk;
 }

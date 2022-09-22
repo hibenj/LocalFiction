@@ -7,7 +7,6 @@
 #include "fiction/networks/technology_network.hpp"
 #include "fiction/networks/views/edge_color_view.hpp"
 #include "fiction/networks/views/input_sort_view.hpp"
-#include "fiction/networks/views/reverse_topo_view.hpp"
 #include "fiction/networks/views/reverse_view.hpp"
 #include "mockturtle/networks/aig.hpp"
 #include "mockturtle/views/names_view.hpp"

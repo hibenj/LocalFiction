@@ -77,6 +77,17 @@ class convert_network_impl<NtkDest, NtkSrc, false>
         // initialize a progress bar
         mockturtle::progress_bar bar{static_cast<uint32_t>(ntk.num_gates()), "[i] network conversion: |{0}|"};
 #endif
+        /*ntk.foreach_node(
+            [&, this](const auto& g, [[maybe_unused]] auto i)
+            {
+                if constexpr (mockturtle::has_is_ro_v<TopoNtkSrc> && mockturtle::has_create_ro_v<NtkDest>)
+                {
+                    if (ntk.is_ro(g))
+                    {
+                        old2new[g] = ntk_dest.create_ro();
+                        return true;
+                    }
+                }});*/
 
         ntk.foreach_gate(
             [&, this](const auto& g, [[maybe_unused]] auto i)
@@ -170,6 +181,18 @@ class convert_network_impl<NtkDest, NtkSrc, false>
                 ntk_dest.create_po(tgt_po);
             });
 
+        /*if constexpr (mockturtle::has_create_ri_v<TopoNtkSrc>){
+            ntk.foreach_ri(
+                [this, &ntk_dest, &old2new](const auto& po)
+                {
+                    const auto tgt_signal = old2new[ntk.get_node(po)];
+                    const auto tgt_po     = ntk.is_complemented(po) ? ntk_dest.create_not(tgt_signal) : tgt_signal;
+
+                    ntk_dest.create_po(tgt_po);
+                });
+        }*/
+
+
         // restore signal names if applicable
         fiction::restore_names(ntk, ntk_dest, old2new);
 
@@ -219,9 +242,15 @@ NtkDest convert_network(const NtkSrc& ntk)
     static_assert(mockturtle::has_create_maj_v<NtkDest>, "NtkDest does not implement the create_maj function");
     // TODO handle ci/ro/etc...
 
-    assert(ntk.is_combinational() && "Network has to be combinational");
+    //assert(ntk.is_combinational() && "Network has to be combinational");
 
     detail::convert_network_impl<NtkDest, NtkSrc> p{ntk};
+
+    if(!ntk.is_combinational()){
+        if(mockturtle::has_create_ro_v<NtkSrc>){
+            std::cout<<"fanout_conversion"<<std::endl;
+        }
+    }
 
     auto result = p.run();
 

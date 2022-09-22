@@ -8,7 +8,6 @@
 #include "fiction/algorithms/network_transformation/fanout_substitution.hpp"
 #include "fiction/networks/technology_network.hpp"
 #include "fiction/networks/views/edge_color_view.hpp"
-#include "fiction/networks/views/reverse_topo_view.hpp"
 #include "mockturtle/networks/aig.hpp"
 #include "mockturtle/views/names_view.hpp"
 #include "mockturtle/views/topo_view.hpp"

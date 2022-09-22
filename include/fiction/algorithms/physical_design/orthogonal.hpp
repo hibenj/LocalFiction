@@ -13,6 +13,7 @@
 #include "fiction/utils/name_utils.hpp"
 #include "fiction/utils/network_utils.hpp"
 #include "fiction/utils/placement_utils.hpp"
+#include "mockturtle/networks/sequential.hpp"
 
 #include <fmt/format.h>
 #include <mockturtle/traits.hpp>
@@ -374,7 +375,7 @@ class orthogonal_impl
 {
   public:
     orthogonal_impl(const Ntk& src, const orthogonal_physical_design_params& p, orthogonal_physical_design_stats& st) :
-            ntk{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<technology_network>>(src)}},
+            ntk{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<mockturtle::sequential<technology_network>>>(src)}},
             ps{p},
             pst{st}
     {}
@@ -599,7 +600,7 @@ class orthogonal_impl
     }
 
   private:
-    mockturtle::topo_view<mockturtle::fanout_view<mockturtle::names_view<technology_network>>> ntk;
+    mockturtle::topo_view<mockturtle::fanout_view<mockturtle::names_view<mockturtle::sequential<technology_network>>>> ntk;
 
     orthogonal_physical_design_params ps;
     orthogonal_physical_design_stats& pst;
@@ -658,6 +659,11 @@ Lyt orthogonal(const Ntk& ntk, orthogonal_physical_design_params ps = {},
 
     orthogonal_physical_design_stats  st{};
     detail::orthogonal_impl<Lyt, Ntk> p{ntk, ps, st};
+
+    /*std::cout<<typeid(Ntk).name()<<std::endl;
+    if(!ntk.is_combinational()){
+        if(mockturtle::has_create_ro_v<Ntk>){std::cout<<"Ntk does not implement the create_ro function"<<std::endl;}
+    }*/
 
     auto result = p.run();
 

@@ -7,6 +7,7 @@
 
 #include "fiction/algorithms/network_transformation/network_conversion.hpp"
 #include "fiction/traits.hpp"
+#include "mockturtle/networks/sequential.hpp"
 
 #include <mockturtle/algorithms/cleanup.hpp>
 #include <mockturtle/traits.hpp>
@@ -65,14 +66,30 @@ class fanout_substitution_impl
 
     NtkDest run()
     {
+        if constexpr (mockturtle::has_create_ro_v<NtkDest>){
+            //std::cout<<"cr:ro"<<std::endl;
+            NtkDest my_ntk;
+            my_ntk.create_ro();
+        }
+
         // initialize a network copy
         auto init = mockturtle::initialize_copy_network<NtkDest>(ntk_topo);
 
         auto substituted = init.first;
         auto old2new     = init.second;
 
-        ntk_topo.foreach_pi([this, &substituted, &old2new](const auto& pi)
-                            { generate_fanout_tree(substituted, pi, old2new); });
+        if (!ntk_topo.is_combinational()){
+            ntk_topo.foreach_ci([this, &substituted, &old2new](const auto& pi)
+                                {
+                                    generate_fanout_tree(substituted, pi, old2new);
+                                    auto no = static_cast<mockturtle::node<NtkDest>>(pi);
+                                });
+        }
+        else
+        {
+            ntk_topo.foreach_pi([this, &substituted, &old2new](const auto& pi)
+                                { generate_fanout_tree(substituted, pi, old2new); });
+        }
 
 #if (PROGRESS_BARS)
         // initialize a progress bar
@@ -297,6 +314,17 @@ NtkDest fanout_substitution(const NtkSrc& ntk_src, fanout_substitution_params ps
     static_assert(mockturtle::has_foreach_gate_v<NtkDest>, "NtkDest does not implement the foreach_gate function");
     static_assert(mockturtle::has_foreach_fanin_v<NtkDest>, "NtkDest does not implement the foreach_fanin function");
     static_assert(mockturtle::has_foreach_po_v<NtkDest>, "NtkDest does not implement the foreach_po function");
+
+    /*if(!ntk_src.is_combinational()){
+        if(mockturtle::has_create_ro_v<NtkSrc>){
+            std::cout<<"fanout_substitution"<<std::endl;
+        }else
+        {
+            std::cout<<"fanout_substitution no create ro"<<std::endl;
+        }
+    }else{
+        std::cout<<"fanout_substitution comb"<<std::endl;
+    }*/
 
     detail::fanout_substitution_impl<NtkDest, NtkSrc> p{ntk_src, ps};
 
