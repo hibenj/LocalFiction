@@ -37,7 +37,7 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::mux21_network<mockturtle::sequential<technology_network>>();
+    auto mux21 = blueprints::mux21_network<mockturtle::sequential<mockturtle::aig_network>>();
 
     mux21.set_network_name("mux21");
 
@@ -79,7 +79,7 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::mux21_network<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::seq_one<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};

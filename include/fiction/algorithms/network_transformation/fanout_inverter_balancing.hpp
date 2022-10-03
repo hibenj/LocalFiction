@@ -51,7 +51,7 @@ class inverter_balancing_impl
                 auto fanout_inv = fanouts(fo_ntk, n);
                 auto balance = std::all_of(fanout_inv.begin(), fanout_inv.end(),[&](const auto& fo_node)
                                               {return fo_ntk.is_inv(fo_node);});
-                if(balance){
+                if(balance && fanout_inv.size()>0){
                     del_inv = fanout_inv[1];
                     blc_fos=n;
                 }
@@ -109,6 +109,12 @@ class inverter_balancing_impl
         ntk.foreach_gate(
             [&, this](const auto& g, [[maybe_unused]] auto i)
             {
+                if constexpr (mockturtle::has_is_ro_v<NtkSrc>){
+                    if(ntk.is_ro(g)){
+                        return true;
+                    }
+                }
+
                 auto children = gather_fanin_signals(g);
 
 #if (PROGRESS_BARS)
@@ -211,6 +217,17 @@ class inverter_balancing_impl
                 ntk_dest.create_po(tgt_po);
             });
 
+        if constexpr (mockturtle::has_foreach_ri_v<TopoNtkSrc>){
+            ntk.foreach_ri(
+                [this, &ntk_dest, &old2new](const auto& po)
+                {
+                    const auto tgt_signal = old2new[ntk.get_node(po)];
+                    const auto tgt_po     = ntk.is_complemented(po) ? ntk_dest.create_not(tgt_signal) : tgt_signal;
+
+                    ntk_dest.create_ri(tgt_po);
+                });
+        }
+
         // restore signal names if applicable
         fiction::restore_names(ntk, ntk_dest, old2new);
 
@@ -242,7 +259,7 @@ bool inverter_balancing_recursive(const NtkSrc& ntk){
                 auto fanout_inv = fanouts(fo_ntk, g);
                 auto balance = std::all_of(fanout_inv.begin(), fanout_inv.end(),[&](const auto& fo_node)
                                               {return fo_ntk.is_inv(fo_node);});
-                if(balance){
+                if(balance && fanout_inv.size()>0){
                     return_val = true;
                 }
             }
@@ -290,7 +307,7 @@ NtkSrc inverter_balancing(const NtkSrc& ntk)
     static_assert(has_is_fanout_v<NtkSrc>, "NtkDest does not implement the has_is_fanout function");
     // TODO handle ci/ro/etc...
 
-    assert(ntk.is_combinational() && "Network has to be combinational");
+    //assert(ntk.is_combinational() && "Network has to be combinational");
 
     detail::inverter_balancing_impl<NtkSrc> p{ntk};
 

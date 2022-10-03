@@ -66,11 +66,11 @@ class fanout_substitution_impl
 
     NtkDest run()
     {
-        if constexpr (mockturtle::has_create_ro_v<NtkDest>){
+        /*if constexpr (mockturtle::has_create_ro_v<NtkDest>){
             //std::cout<<"cr:ro"<<std::endl;
             NtkDest my_ntk;
             my_ntk.create_ro();
-        }
+        }*/
 
         // initialize a network copy
         auto init = mockturtle::initialize_copy_network<NtkDest>(ntk_topo);
@@ -80,10 +80,7 @@ class fanout_substitution_impl
 
         if (!ntk_topo.is_combinational()){
             ntk_topo.foreach_ci([this, &substituted, &old2new](const auto& pi)
-                                {
-                                    generate_fanout_tree(substituted, pi, old2new);
-                                    auto no = static_cast<mockturtle::node<NtkDest>>(pi);
-                                });
+                                {generate_fanout_tree(substituted, pi, old2new);});
         }
         else
         {
@@ -99,6 +96,12 @@ class fanout_substitution_impl
         ntk_topo.foreach_gate(
             [&, this](const auto& n, [[maybe_unused]] auto i)
             {
+                if constexpr (mockturtle::has_is_ro_v<NtkDest>){
+                    if(ntk_topo.is_ro(n)){
+                        return;
+                    }
+                }
+
                 // gather children, but substitute fanouts where applicable
                 std::vector<mockturtle::signal<mockturtle::topo_view<NtkDest>>> children{};
 
@@ -142,6 +145,20 @@ class fanout_substitution_impl
 
                 substituted.create_po(tgt_po);
             });
+
+        if constexpr (mockturtle::has_is_ro_v<NtkDest>){
+            ntk_topo.foreach_ri(
+                [this, &old2new, &substituted](const auto& po)
+                {
+                    const auto po_node    = ntk_topo.get_node(po);
+                    auto       tgt_signal = old2new[po_node];
+                    auto       tgt_po     = get_fanout(substituted, po_node, tgt_signal);
+
+                    tgt_po = ntk_topo.is_complemented(po) ? substituted.create_not(tgt_signal) : tgt_po;
+
+                    substituted.create_ri(tgt_po);
+                });
+        }
 
         // restore signal names if applicable
         fiction::restore_names(ntk_topo, substituted, old2new);

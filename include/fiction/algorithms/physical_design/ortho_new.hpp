@@ -752,11 +752,15 @@ class orthogonal_new_impl
         }
         tile<Lyt> latest_pos_inputs{0, 0};
 
+        std::vector<mockturtle::node<Ntk>> Ros;
+
+        ctn.color_ntk.foreach_co([&](const auto& g){Ros.push_back(g);});
+
         std::cout<<"Inverter_Flag"<<ctn.color_ntk.isFo_inv_flag()<<std::endl;
 
-        std::vector<std::pair<unsigned __int64, unsigned __int64>> resolve_rows;
+        //std::vector<std::pair<unsigned __int64, unsigned __int64>> resolve_rows;
 
-        std::vector<std::pair<unsigned __int64, unsigned __int64>> resolve_columns;
+        //std::vector<std::pair<unsigned __int64, unsigned __int64>> resolve_columns;
 
 
 #if (PROGRESS_BARS)
@@ -801,15 +805,33 @@ class orthogonal_new_impl
                                                     }
                                                 });*/
 
+                    bool plc_ro = false;
+                    // if node is a RO, move it to its correct position
+                    if constexpr (mockturtle::has_is_ro_v<Ntk>){
+                        if(ctn.color_ntk.is_ro(n)){
+                            plc_ro = true;
+                        }else
+                            plc_ro = false;
+                    }
+
+                    if(plc_ro){
+                        //std::cout<<"Ro will plaziert werden"<<std::endl;
+                        node2pos[n] = layout.move_node(pi2node[n], {latest_pos_inputs});
+                        std::cout<<n<<"Ro (als Pi) plaziert auf "<<"X:"<<latest_pos_inputs.x<<"Y:"<<latest_pos_inputs.y<<std::endl;
+
+                        //++latest_pos.y;
+                        ++latest_pos_inputs.y;
+                    }
+
                     // if node is a PI, move it to its correct position
-                    if (ctn.color_ntk.is_pi(n))
+                    else if (ctn.color_ntk.is_pi(n))
                     {
                         /**NEW CODE
                          * !!new latest_pos for inputs
                          * **/
                         /*Placing Inputs in first Column*/
                         node2pos[n] = layout.move_node(pi2node[n], {latest_pos_inputs});
-                        std::cout<<n<<"Pi plaziert auf"<<"X:"<<latest_pos_inputs.x<<"Y:"<<latest_pos_inputs.y<<std::endl;
+                        std::cout<<n<<"Pi plaziert auf "<<"X:"<<latest_pos_inputs.x<<"Y:"<<latest_pos_inputs.y<<std::endl;
 
                         //++latest_pos.y;
                         ++latest_pos_inputs.y;
@@ -872,8 +894,8 @@ class orthogonal_new_impl
                                 {
                                     //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
                                     pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {latest_pos.x + 1, pre3_t.y}));
-                                    std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre3_t.y+1, pre3_t.x);
-                                    resolve_rows.push_back(row_resolve_to_column);
+                                    //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre3_t.y+1, pre3_t.x);
+                                    //resolve_rows.push_back(row_resolve_to_column);
 
 
                                     auto pre_clock = layout.get_clock_number({pre3_t});
@@ -891,7 +913,7 @@ class orthogonal_new_impl
                                     {
                                         pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, pre3_t.y+2}));
                                     }
-                                    else
+                                    /*else
                                     {
                                         for (const auto &item : resolve_rows) {
                                             if (item.first == pre3_t.y) {
@@ -901,12 +923,12 @@ class orthogonal_new_impl
                                                 break;
                                             }
                                         }
-                                    }
+                                    }*/
 
                                     //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
                                     pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
-                                    std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
-                                    resolve_rows.push_back(row_resolve_to_column);
+                                    //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
+                                    //resolve_rows.push_back(row_resolve_to_column);
 
 
                                     auto pre_clock = layout.get_clock_number({pre2_t});
@@ -924,7 +946,7 @@ class orthogonal_new_impl
                                     {
                                         pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y+2}));
                                     }
-                                    else
+                                    /*else
                                     {
                                         for (const auto &item : resolve_rows) {
                                             if (item.first == pre2_t.y) {
@@ -934,12 +956,12 @@ class orthogonal_new_impl
                                                 break;
                                             }
                                         }
-                                    }
+                                    }*/
 
 
                                     pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
-                                    std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
-                                    resolve_rows.push_back(row_resolve_to_column);
+                                    //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
+                                    //resolve_rows.push_back(row_resolve_to_column);
 
 
                                     auto pre_clock = layout.get_clock_number({pre1_t});
@@ -1152,9 +1174,9 @@ class orthogonal_new_impl
                         tile<Lyt> t{};
 
                         auto maj_buf = majority_buffer(ctn.color_ntk, n);
-                        for(int n_buf = 0; n_buf < maj_buf.size(); ++n_buf){
+                        /*for(int n_buf = 0; n_buf < maj_buf.size(); ++n_buf){
                             std::cout << "maj buf: " << maj_buf[n_buf] << std::endl;
-                        }
+                        }*/
 
                         /**insert buffer when a fan-out has two same colored outputs
                         this should be resolved in the coloring**/
@@ -1210,8 +1232,8 @@ class orthogonal_new_impl
                                     {
                                         std::cout << "CASE: ONE" << '\n';
                                         /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
-                                        std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
-                                        resolve_rows.push_back(row_resolve_to_column);
+                                        //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
+                                        //resolve_rows.push_back(row_resolve_to_column);
                                         pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
 
 
@@ -1234,8 +1256,8 @@ class orthogonal_new_impl
                                         std::cout << "CASE: TWO" << '\n';
 
                                         pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t.x + 2, pre2_t.y}));
-                                        std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
-                                        resolve_rows.push_back(row_resolve_to_column);
+                                        //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
+                                        //resolve_rows.push_back(row_resolve_to_column);
 
                                         auto pre_clock = layout.get_clock_number({pre2_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
@@ -1346,8 +1368,8 @@ class orthogonal_new_impl
                                         pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, t.y + 2}));
                                         //std::cout<<"wire to "<<"X: "<<pre1_t.x<<"Y: "<<pre1_t.y<<std::endl;
 
-                                        std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre1_t.x + 1, pre1_t.y);
-                                        resolve_rows.push_back(column_resolve_to_row);
+                                        //std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre1_t.x + 1, pre1_t.y);
+                                        //resolve_rows.push_back(column_resolve_to_row);
 
                                         auto pre_clock = layout.get_clock_number({pre1_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
@@ -1371,8 +1393,8 @@ class orthogonal_new_impl
                                     else
                                     {
                                         //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
-                                        std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre2_t.x + 1, pre2_t.y);
-                                        resolve_rows.push_back(column_resolve_to_row);
+                                        //std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre2_t.x + 1, pre2_t.y);
+                                        //resolve_rows.push_back(column_resolve_to_row);
 
                                         pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
                                         //std::cout<<"wire to "<<"X: "<<pre2_t.x<<"Y: "<<pre2_t.y<<std::endl;
@@ -1476,69 +1498,108 @@ class orthogonal_new_impl
                                              po_tile);
                         }
                         std::cout<<n<<"PO plaziert auf"<<"X:"<<po_tile.x<<"Y:"<<po_tile.y<<std::endl;
+                        Ros.erase(std::find(Ros.begin(), Ros.end(), n));
                     }
 
                     /***************************************************************Place Ris***************************************************************/
-                    if(!ctn.color_ntk.is_combinational())
+                    if constexpr (mockturtle::has_is_ro_v<Ntk>)
                     {
-                        //The RIs need to be placed in the same order as the ROs at the Inputs
-                        //Variable needed with order of ROs - order should be determined in input_sort
-                        auto num_ris = ctn.color_ntk.num_registers();
-                        auto n_s = node2pos[n];
-
-                        tile<Lyt> ri_tile{};
-
-                        // determine PO orientation
-                        if (is_eastern_po_orientation_available(ctn, n))
+                        if (!ctn.color_ntk.is_combinational())
                         {
-                            ++latest_pos.x;
-                            layout.resize({latest_pos.x-1, latest_pos.y-1, 1});
-                            //wire the RIs in a Diagonal
-                            ri_tile = layout.east(static_cast<tile<Lyt>>(n_s));
-                            ri_tile = layout.south(static_cast<tile<Lyt>>(n_s));
-                        }
-                        else
-                        {
-                            ++latest_pos.y;
-                            layout.resize({latest_pos.x-1, latest_pos.y-1, 1});
-                            //wire the RIs in a Diagonal
-                            ri_tile = layout.south(static_cast<tile<Lyt>>(n_s));
-                            ri_tile = layout.east(static_cast<tile<Lyt>>(n_s));
-                        }
+                            if(std::find(Ros.begin(), Ros.end(), n) != Ros.end())
+                            {
+                                auto n_s = node2pos[n];
 
-                        //Create RI on this tile: layout.create_ri function needed
-                        //
-                        //
-                        //
-                        //Wire RIs back to ROs
-                        int x = 1;
-                        switch(x) {
-                            case 1:
-                                // R1
-                                // wire east to latest_pos.x + 1
-                                // wire south to latest_pos.y + num_ris
-                                // wire west to if (ri.y - ro.y log2 = (ri.x - ri.x + num_ris) log2) {pos_inputs.x - 2 - 2*(2)} else {pos_inputs.x - 3 - 2*(2)}
-                                // wire north to corresponding ro.y
-                                // wire east to corresponding ro.x
-                                break;
-                            case 2:
-                                // R1
-                                // wire east to latest_pos.x + 1 + one cycle
-                                // wire south to latest_pos.y + num_ris - 1
-                                // wire west to if (ri.y - ro.y log2 = (ri.x - ri.x + num_ris) log2) {pos_inputs.x - 2 - 1*(2)} else {pos_inputs.x - 3 - 1*(2)}
-                                // wire north to corresponding ro.y
-                                // wire east to corresponding ro.x
-                                break;
-                            case 3:
-                                // R1
-                                // wire east to latest_pos.x + 1 + two cycles
-                                // wire south to latest_pos.y + num_ris - 2
-                                // wire west to if (ri.y - ro.y log2 = (ri.x - ri.x + num_ris) log2) {pos_inputs.x - 2 - 0*(2)} else {pos_inputs.x - 3 - 0*(2)}
-                                // wire north to corresponding ro.y
-                                // wire east to corresponding ro.x
-                                break;
-                        }
+                                tile<Lyt> po_tile{};
 
+                                // determine PO orientation
+                                ++latest_pos.y;
+                                layout.resize({latest_pos.x-1, latest_pos.y-1, 1});
+                                po_tile = layout.south(static_cast<tile<Lyt>>(n_s));
+                                /*if(ctn.color_ntk.is_maj(n))
+                                {
+                                    ++po_tile.y;
+                                    n_s = static_cast<mockturtle::signal<Lyt>>(po_tile);
+                                    ++po_tile.x;
+                                }*/
+
+                                // check if PO position is located at the border
+                                if (layout.is_at_eastern_border(po_tile))
+                                {
+                                    layout.create_po(n_s,
+                                                     ctn.color_ntk.has_output_name(po_counter) ?
+                                                         ctn.color_ntk.get_output_name(po_counter++) :
+                                                         fmt::format("po{}", po_counter++),
+                                                     po_tile);
+                                }
+                                // place PO at the border and connect it by wire segments
+                                else
+                                {
+                                    const auto anker = layout.create_buf(n_s, po_tile);
+
+                                    po_tile = layout.eastern_border_of(po_tile);
+
+                                    layout.create_po(wire_east(layout, static_cast<tile<Lyt>>(anker), po_tile),
+                                                     ctn.color_ntk.has_output_name(po_counter) ?
+                                                         ctn.color_ntk.get_output_name(po_counter++) :
+                                                         fmt::format("po{}", po_counter++),
+                                                     po_tile);
+                                }
+                                std::cout<<n<<"Ro (als Po) plaziert auf"<<"X:"<<po_tile.x<<"Y:"<<po_tile.y<<std::endl;
+                                /*// The RIs need to be placed in the same order as the ROs at the Inputs
+                                // Variable needed with order of ROs - order should be determined in input_sort
+                                auto num_ris = ctn.color_ntk.num_registers();
+                                auto n_s     = node2pos[n];
+
+                                tile<Lyt> ri_tile{};
+
+                                // determine PO orientation
+                                if (is_eastern_po_orientation_available(ctn, n))
+                                {
+                                    ++latest_pos.x;
+                                    layout.resize({latest_pos.x - 1, latest_pos.y - 1, 1});
+                                    // wire the RIs in a Diagonal
+                                    ri_tile = layout.east(static_cast<tile<Lyt>>(n_s));
+                                    ri_tile = layout.south(static_cast<tile<Lyt>>(n_s));
+                                }
+                                else
+                                {
+                                    ++latest_pos.y;
+                                    layout.resize({latest_pos.x - 1, latest_pos.y - 1, 1});
+                                    // wire the RIs in a Diagonal
+                                    ri_tile = layout.south(static_cast<tile<Lyt>>(n_s));
+                                    ri_tile = layout.east(static_cast<tile<Lyt>>(n_s));
+                                }
+
+                                // Create RI on this tile: layout.create_ri function needed
+                                //
+                                //
+                                //
+                                // Wire RIs back to ROs
+                                int x = 1;
+                                switch (x)
+                                {
+                                    case 1:
+                                        // R1
+                                        // wire east to latest_pos.x + 1
+                                        // wire south to latest_pos.y + num_ris
+                                        // wire west to if (ri.y - ro.y log2 = (ri.x - ri.x + num_ris) log2) {pos_inputs.x - 2 - 2*(2)} else {pos_inputs.x - 3 - 2*(2)} wire north to corresponding ro.y wire east to corresponding ro.x
+                                        break;
+                                    case 2:
+                                        // R1
+                                        // wire east to latest_pos.x + 1 + one cycle
+                                        // wire south to latest_pos.y + num_ris - 1
+                                        // wire west to if (ri.y - ro.y log2 = (ri.x - ri.x + num_ris) log2) {pos_inputs.x - 2 - 1*(2)} else {pos_inputs.x - 3 - 1*(2)} wire north to corresponding ro.y wire east to corresponding ro.x
+                                        break;
+                                    case 3:
+                                        // R1
+                                        // wire east to latest_pos.x + 1 + two cycles
+                                        // wire south to latest_pos.y + num_ris - 2
+                                        // wire west to if (ri.y - ro.y log2 = (ri.x - ri.x + num_ris) log2) {pos_inputs.x - 2 - 0*(2)} else {pos_inputs.x - 3 - 0*(2)} wire north to corresponding ro.y wire east to corresponding ro.x
+                                        break;
+                                }*/
+                            }
+                        }
                     }
                     /***************************************************************Place Ris***************************************************************/
                 }

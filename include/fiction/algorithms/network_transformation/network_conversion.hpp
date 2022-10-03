@@ -92,6 +92,11 @@ class convert_network_impl<NtkDest, NtkSrc, false>
         ntk.foreach_gate(
             [&, this](const auto& g, [[maybe_unused]] auto i)
             {
+                if constexpr (mockturtle::has_is_ro_v<NtkSrc>){
+                    if(ntk.is_ro(g)){
+                        return true;
+                    }
+                }
                 auto children = gather_fanin_signals(g);
 
 #if (PROGRESS_BARS)
@@ -181,16 +186,16 @@ class convert_network_impl<NtkDest, NtkSrc, false>
                 ntk_dest.create_po(tgt_po);
             });
 
-        /*if constexpr (mockturtle::has_create_ri_v<TopoNtkSrc>){
+        if constexpr (mockturtle::has_foreach_ri_v<TopoNtkSrc>){
             ntk.foreach_ri(
                 [this, &ntk_dest, &old2new](const auto& po)
                 {
                     const auto tgt_signal = old2new[ntk.get_node(po)];
                     const auto tgt_po     = ntk.is_complemented(po) ? ntk_dest.create_not(tgt_signal) : tgt_signal;
 
-                    ntk_dest.create_po(tgt_po);
+                    ntk_dest.create_ri(tgt_po);
                 });
-        }*/
+        }
 
 
         // restore signal names if applicable
@@ -245,12 +250,6 @@ NtkDest convert_network(const NtkSrc& ntk)
     //assert(ntk.is_combinational() && "Network has to be combinational");
 
     detail::convert_network_impl<NtkDest, NtkSrc> p{ntk};
-
-    if(!ntk.is_combinational()){
-        if(mockturtle::has_create_ro_v<NtkSrc>){
-            std::cout<<"fanout_conversion"<<std::endl;
-        }
-    }
 
     auto result = p.run();
 
