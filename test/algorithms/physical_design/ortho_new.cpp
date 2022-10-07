@@ -86,6 +86,12 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 
     const auto layout = orthogonal_new<gate_layout>(mux21, {}, &stats);
 
+    std::cout<<"clock number "<<layout.get_clock_number({5, 4, 0})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({4, 4, 0})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({3, 4, 0})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({2, 4, 0})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({1, 4, 0})<<std::endl;
+
     fiction::debug::write_dot_layout(layout);
 
     // network name

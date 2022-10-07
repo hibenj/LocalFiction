@@ -9,6 +9,7 @@
 #include "fiction/layouts/clocking_scheme.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/utils/range.hpp"
+#include "mockturtle/networks/sequential.hpp"
 
 #include <kitty/constructors.hpp>
 #include <kitty/dynamic_truth_table.hpp>
@@ -213,6 +214,20 @@ class gate_level_layout : public ClockedLayout
         strg->inputs.emplace_back(n);
         strg->data.node_names[n] = name.empty() ? fmt::format("pi{}", num_pis()) : name;
         assign_node(t, n);
+        ++sequential_inf.num_pis;
+
+        return static_cast<signal>(t);
+    }
+
+    signal create_ro(const std::string& name = {}, const tile& t = {})
+    {
+        const auto n = static_cast<node>(strg->nodes.size());
+        strg->nodes.emplace_back();     // empty node data
+        strg->nodes[n].data[1].h1 = 2;  // assign identity function
+        strg->inputs.emplace_back(n);
+        sequential_inf.registers.emplace_back();
+        strg->data.node_names[n] = name.empty() ? fmt::format("ro{}", num_pis()) : name;
+        assign_node(t, n);
 
         return static_cast<signal>(t);
     }
@@ -225,6 +240,23 @@ class gate_level_layout : public ClockedLayout
         strg->outputs.emplace_back(static_cast<signal>(t));
         strg->data.node_names[n] = name.empty() ? fmt::format("po{}", num_pos()) : name;
         assign_node(t, n);
+        ++sequential_inf.num_pos;
+
+        /* increase ref-count to child */
+        strg->nodes[get_node(s)].data[0].h1++;
+        strg->nodes[n].children.push_back(s);
+
+        return static_cast<signal>(t);
+    }
+
+    signal create_ri(const signal& s, [[maybe_unused]] const std::string& name = {}, const tile& t = {})
+    {
+        const auto n = static_cast<node>(strg->nodes.size());
+        strg->nodes.emplace_back();     // empty node data
+        strg->nodes[n].data[1].h1 = 2;  // assign identity function
+        strg->outputs.emplace_back(static_cast<signal>(t));
+        strg->data.node_names[n] = name.empty() ? fmt::format("ri{}", num_pos()) : name;
+        assign_node(t, n);
 
         /* increase ref-count to child */
         strg->nodes[get_node(s)].data[0].h1++;
@@ -235,11 +267,11 @@ class gate_level_layout : public ClockedLayout
 
     [[nodiscard]] bool is_pi(const node n) const noexcept
     {
-        return std::find(strg->inputs.cbegin(), strg->inputs.cend(), n) != strg->inputs.cend();
+        return std::find(strg->inputs.cbegin(), strg->inputs.cbegin()+num_pis(), n) != strg->inputs.cbegin()+num_pis();
     }
     [[nodiscard]] bool is_ci(const node n) const noexcept
     {
-        return is_pi(n);
+        return std::find(strg->inputs.cbegin(), strg->inputs.cend(), n) != strg->inputs.cend();
     }
     /**
      * Check whether tile t hosts a primary input.
@@ -254,13 +286,14 @@ class gate_level_layout : public ClockedLayout
 
     [[nodiscard]] bool is_po(const node n) const noexcept
     {
-        return std::find_if(strg->outputs.cbegin(), strg->outputs.cend(),
-                            [this, &n](const auto& p) { return this->get_node(p.index) == n; }) != strg->outputs.cend();
+        return std::find_if(strg->outputs.cbegin(), strg->outputs.cbegin()+num_pos(),
+                            [this, &n](const auto& p) { return this->get_node(p.index) == n; }) != strg->outputs.cbegin()+num_pos();
     }
 
     [[nodiscard]] bool is_co(const node n) const noexcept
     {
-        return is_po(n);
+        return std::find_if(strg->outputs.cbegin(), strg->outputs.cend(),
+                            [this, &n](const auto& p) { return this->get_node(p.index) == n; }) != strg->outputs.cend();
     }
     /**
      * Check whether tile t hosts a primary output.
@@ -478,22 +511,32 @@ class gate_level_layout : public ClockedLayout
 
     [[nodiscard]] auto num_cis() const noexcept
     {
-        return num_pis();
+        return strg->inputs.size();
     }
 
     [[nodiscard]] auto num_pis() const noexcept
     {
-        return strg->inputs.size();
+        return sequential_inf.num_pis;
+    }
+
+    [[nodiscard]] auto num_ros() const noexcept
+    {
+        return sequential_inf.registers.size();
     }
 
     [[nodiscard]] auto num_cos() const noexcept
     {
-        return num_pos();
+        return strg->outputs.size();
     }
 
     [[nodiscard]] auto num_pos() const noexcept
     {
-        return strg->outputs.size();
+        return sequential_inf.num_pos;
+    }
+
+    [[nodiscard]] auto num_ris() const noexcept
+    {
+        return sequential_inf.registers.size();
     }
 
     [[nodiscard]] uint32_t num_latches() const
@@ -503,7 +546,7 @@ class gate_level_layout : public ClockedLayout
 
     [[nodiscard]] uint32_t num_registers() const
     {
-        return 0u;
+        return sequential_inf.registers.size();
     }
     /**
      * Returns the number of placed nodes in the layout that do not compute the identity function.
@@ -836,8 +879,23 @@ class gate_level_layout : public ClockedLayout
     {
         using IteratorType = decltype(strg->inputs.cbegin());
         mockturtle::detail::foreach_element_transform<IteratorType, node>(
-            strg->inputs.cbegin(), strg->inputs.cend(), [](const auto& i) { return static_cast<node>(i); }, fn);
+            strg->inputs.cbegin(), strg->inputs.cbegin()+num_pis(), [](const auto& i) { return static_cast<node>(i); }, fn);
     }
+    /**
+     * Applies a function to all register outputs (including dead ones) in the layout.
+     *
+     * @tparam Fn Functor type that has to comply with the restrictions imposed by
+     * mockturtle::foreach_element_transform.
+     * @param fn Functor to apply to each register output node.
+     */
+    template <typename Fn>
+    void foreach_ro(Fn&& fn) const
+    {
+        using IteratorType = decltype(strg->inputs.cbegin()+num_pis());
+        mockturtle::detail::foreach_element_transform<IteratorType, node>(
+            strg->inputs.cbegin()+num_pis(), strg->inputs.cend(), [](const auto& i) { return static_cast<node>(i); }, fn);
+    }
+
     /**
      * Applies a function to all primary output signals (including those that point to dead nodes) in the layout. Note
      * the difference to foreach_pi in the signature of fn. This function applies to all POs as signals whereas
@@ -852,7 +910,24 @@ class gate_level_layout : public ClockedLayout
     {
         using IteratorType = decltype(strg->outputs.cbegin());
         mockturtle::detail::foreach_element_transform<IteratorType, signal>(
-            strg->outputs.cbegin(), strg->outputs.end(), [](const auto& o) { return o.index; }, fn);
+            strg->outputs.cbegin(), strg->outputs.cbegin()+num_pos(), [](const auto& o) { return o.index; }, fn);
+    }
+
+    /**
+     * Applies a function to all register input signals (including those that point to dead nodes) in the layout. Note
+     * the difference to foreach_ro in the signature of fn. This function applies to all RIs as signals whereas
+     * foreach_ro applies to all ROs as nodes. This is with respect to mockturtle's API.
+     *
+     * @tparam Fn Functor type that has to comply with the restrictions imposed by
+     * mockturtle::foreach_element_transform.
+     * @param fn Functor to apply to each register input signal.
+     */
+    template <typename Fn>
+    void foreach_ri(Fn&& fn) const
+    {
+        using IteratorType = decltype(strg->outputs.cbegin()+num_pos());
+        mockturtle::detail::foreach_element_transform<IteratorType, signal>(
+            strg->outputs.cbegin()+num_pos(), strg->outputs.cend(), [](const auto& o) { return o.index; }, fn);
     }
     /**
      * Applies a function to all nodes (excluding dead ones) in the layout.
@@ -1375,6 +1450,15 @@ class gate_level_layout : public ClockedLayout
 
   private:
     storage strg;
+
+    struct sequential_information
+    {
+        uint32_t num_pis{ 0 };
+        uint32_t num_pos{ 0 };
+        std::vector<mockturtle::register_t> registers;
+    };
+
+    sequential_information sequential_inf;
 
     event_storage evnts;
 

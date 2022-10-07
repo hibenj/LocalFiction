@@ -66,11 +66,16 @@ class fanout_substitution_impl
 
     NtkDest run()
     {
-        /*if constexpr (mockturtle::has_create_ro_v<NtkDest>){
-            //std::cout<<"cr:ro"<<std::endl;
-            NtkDest my_ntk;
-            my_ntk.create_ro();
-        }*/
+        /*ntk_topo.foreach_node(
+            [&](const auto& n)
+            {
+                std::cout<<"Ro fo_sub "<<n<<std::endl;
+                if constexpr (mockturtle::ro_index_v<NtkDest>){
+                    std::cout << "TYPE: " << typeid(ntk_topo).name() << '\n';
+                    std::cout<<"index "<<ntk_topo.ro_index(n)<<std::endl;
+
+                }
+            });*/
 
         // initialize a network copy
         auto init = mockturtle::initialize_copy_network<NtkDest>(ntk_topo);

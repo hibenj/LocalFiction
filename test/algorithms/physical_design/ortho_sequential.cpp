@@ -10,21 +10,22 @@
 #include "utils/blueprints/network_blueprints.hpp"
 
 #include <fiction/networks/technology_network.hpp>
+#include "fiction/networks/sequential_technology_network.h"
 
 using namespace fiction;
 
 TEST_CASE("sequ_net", "[ortho_sequential]")
 {
 
-    auto seq_one = blueprints::seq_one<mockturtle::sequential<technology_network>>();
+    auto seq_one = blueprints::seq_one<mockturtle::sequential<fiction::technology_network>>();
 
     auto seq_two = topo_view_input_sort{mockturtle::fanout_view{inverter_balancing(fanout_substitution<mockturtle::names_view<mockturtle::sequential<fiction::technology_network>>>(seq_one))}};
     seq_one.set_network_name("seq_one");
 
     //std::cout<<typeid(seq_one).name()<<std::endl;
 
-    static_assert(mockturtle::has_create_ro_v<class mockturtle::names_view<class mockturtle::sequential<class fiction::technology_network> >>, "NtkDest does not implement the create_ro function");
-    static_assert(mockturtle::has_foreach_ro_v<mockturtle::topo_view<class mockturtle::names_view<class mockturtle::sequential<class fiction::technology_network> >>>, "NtkDest does not implement the create_ro function");
+    static_assert(mockturtle::has_ro_to_ri_v<class mockturtle::sequential<class mockturtle::aig_network> >, "NtkDest does not implement the create_ro function");
+    static_assert(mockturtle::ri_index_v<mockturtle::topo_view<class mockturtle::names_view<class mockturtle::sequential<class fiction::technology_network> >>>, "NtkDest does not implement the create_ro function");
 
     std::cout<<"Combinational check "<<seq_one.is_combinational()<<std::endl;
 
@@ -87,7 +88,9 @@ TEST_CASE("sequ_net", "[ortho_sequential]")
     seq_two.foreach_ri(
         [&](const auto& n)
         {
-            std::cout<<"Ri "<<n<<std::endl;
+            std::cout<<"Ri "<<static_cast<bool>(seq_two.is_ri(n))<<std::endl;
+            std::cout<<"Cro_index "<<seq_two.ri_index(n)<<std::endl;
+            std::cout<<"ro_to_ro "<<seq_two.ri_to_ro(n)<<std::endl;
         });
 
 }
@@ -97,15 +100,20 @@ TEST_CASE("fo_sub and ntk_conv for sequential", "[ortho_sequential]")
 
     auto seq_one = blueprints::seq_one<mockturtle::sequential<mockturtle::aig_network>>();
 
-    auto seq_two = fanout_substitution<mockturtle::names_view<mockturtle::sequential<fiction::technology_network>>>(seq_one);
+    auto seq_two = fanout_substitution<mockturtle::names_view<mockturtle::sequential<technology_network>>>(seq_one);
     seq_one.set_network_name("seq_one");
 
     //std::cout<<typeid(seq_one).name()<<std::endl;
 
-    static_assert(mockturtle::has_create_ro_v<class mockturtle::names_view<class mockturtle::sequential<class fiction::technology_network> >>, "NtkDest does not implement the create_ro function");
-    static_assert(mockturtle::has_foreach_ro_v<mockturtle::topo_view<class mockturtle::names_view<class mockturtle::sequential<class fiction::technology_network> >>>, "NtkDest does not implement the create_ro function");
+    static_assert(mockturtle::ro_index_v<class mockturtle::names_view<class mockturtle::sequential<class fiction::technology_network> >>, "NtkDest does not implement the create_ro function");
+    static_assert(mockturtle::ro_index_v<mockturtle::topo_view<class mockturtle::names_view<class mockturtle::sequential<class fiction::technology_network> >>>, "NtkDest does not implement the create_ro function");
 
     std::cout<<"Combinational check "<<seq_one.is_combinational()<<std::endl;
+
+    std::cout<<"Cro_index "<<seq_one.ro_index(2)<<std::endl;
+    std::cout<<"Cro_index "<<seq_one.pi_index(1)<<std::endl;
+
+    //std::cout<<"Cro_index "<<seq_two.ro_index(3)<<std::endl;
 
     seq_two.foreach_node(
         [&](const auto& n)
