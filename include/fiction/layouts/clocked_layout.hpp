@@ -174,6 +174,9 @@ class clocked_layout : public CoordinateLayout
         if (cz1 == cz2)
             return false;
 
+        auto inc = static_cast<clock_number_t>(get_clock_number(cz2));
+        auto out = static_cast<clock_number_t>(get_clock_number(cz1));
+
         return static_cast<clock_number_t>((get_clock_number(cz2) + static_cast<clock_number_t>(1)) % num_clocks()) ==
                get_clock_number(cz1);
     }

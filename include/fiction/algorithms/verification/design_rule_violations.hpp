@@ -360,15 +360,19 @@ class gate_level_drvs_impl
                 {
                     const auto t = lyt.get_tile(n);
 
+                    auto r_t = lyt.get_tile(n);
+                    ++r_t.x;
+
                     bool dangling_inp_connection =
-                        lyt.template incoming_data_flow<std::set<tile<Lyt>>>(t).empty() && !lyt.is_pi_tile(t);
+                        lyt.template incoming_data_flow<std::set<tile<Lyt>>>(t).empty() && !lyt.is_pi_tile(t) && !lyt.is_ro_tile(t);
                     bool dangling_out_connection =
-                        lyt.template outgoing_data_flow<std::set<tile<Lyt>>>(t).empty() && !lyt.is_po_tile(t);
+                        lyt.template outgoing_data_flow<std::set<tile<Lyt>>>(t).empty() && !lyt.is_po_tile(t) && !lyt.is_ri_tile(t) && !lyt.is_ro_tile(r_t);
 
                     if (dangling_out_connection || dangling_inp_connection)
                     {
                         all_connected = false;
                         log_tile(t, connections_report);
+                        std::cout<<"IN "<<dangling_inp_connection<<" Out "<<dangling_out_connection<<" Tile not properly connected "<<t.x<<t.y<<std::endl;
                         ++pst.drvs;
                     }
                 }

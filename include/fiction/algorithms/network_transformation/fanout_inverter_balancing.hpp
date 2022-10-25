@@ -273,6 +273,9 @@ bool inverter_balancing_recursive(const NtkSrc& ntk){
  * Converts a logic network into an equivalent one of another type. Thereby, this function is very similar to
  * mockturtle::cleanup_dangling. However, it supports real buffer nodes used for fanouts and path balancing in fiction.
  *
+ * If all fanouts of a node are inverted, the inverters are replaced by one inverter as fanin of this node
+ * This is part of the Distribution Newtork I: Inputs
+ *
  * NOTE: In contrast to mockturtle::cleanup_dangling, this function returns ntk if NtkDest and NtkSrc are of the same
  * type.
  *

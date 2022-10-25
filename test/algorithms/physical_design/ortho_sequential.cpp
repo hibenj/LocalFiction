@@ -17,7 +17,7 @@ using namespace fiction;
 TEST_CASE("sequ_net", "[ortho_sequential]")
 {
 
-    auto seq_one = blueprints::seq_one<mockturtle::sequential<fiction::technology_network>>();
+    auto seq_one = blueprints::seq_two<mockturtle::sequential<fiction::technology_network>>();
 
     auto seq_two = topo_view_input_sort{mockturtle::fanout_view{inverter_balancing(fanout_substitution<mockturtle::names_view<mockturtle::sequential<fiction::technology_network>>>(seq_one))}};
     seq_one.set_network_name("seq_one");
@@ -29,6 +29,12 @@ TEST_CASE("sequ_net", "[ortho_sequential]")
 
     std::cout<<"Combinational check "<<seq_one.is_combinational()<<std::endl;
 
+    //seq_two.is_ri(3);
+
+    seq_one.foreach_ro([&](const auto& reg_out){
+                           std::cout<<"RO Index "<<seq_one.ro_index(reg_out)<<std::endl;
+                       });
+
     seq_two.foreach_node(
         [&](const auto& n)
         {
@@ -39,6 +45,7 @@ TEST_CASE("sequ_net", "[ortho_sequential]")
         [&](const auto& n)
         {
             std::cout<<"Pis "<<n<<std::endl;
+            std::cout<<"Pi Index "<<seq_two.pi_index(n)<<std::endl;
         });
 
     seq_two.foreach_ci(

@@ -23,9 +23,8 @@ namespace fiction
 {
 
 /**
- * A variation of mockturtle::topo_view that computes the reverse topological order. Unfortunately, this view could not
- * just extend mockturtle::topo_view and override its update_topo function because the necessary data members are
- * private instead of protected...
+ * A variation of mockturtle::topo_view that computes the topological order after sorting the inputs according to their fanout nodes.
+ * This is part of the Distribution Newtork I: Inputs
  *
  * @tparam Ntk mockturtle network type.
  * @tparam sorted Flag that determines whether Ntk is already wrapped in a topo_view.
@@ -150,11 +149,18 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
         mockturtle::detail::foreach_element_if( topo_order.begin()+num_c, topo_order.begin()+num_c+num_p+num_r, [this]( auto n ) { return my_ntk.is_pi( n );}, fn );
     }
 
-    /*! \brief Reimplementation of `foreach_pi`. */
+    /*! \brief Reimplementation of `foreach_ro`. */
     template<typename Fn>
     void foreach_ro( Fn&& fn ) const
     {
         mockturtle::detail::foreach_element_if( topo_order.begin()+num_c, topo_order.begin()+num_c+num_p+num_r, [this]( auto n ) { return my_ntk.is_ro( n );}, fn );
+    }
+
+    node ro_at(uint32_t index) const
+    {
+        std::vector<node> ROs;
+        foreach_ro( [&](const auto& n){ROs.emplace_back(n);});
+        return ROs[index];
     }
 
     /**
@@ -208,10 +214,6 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
 
         this->foreach_node([this](auto n){if(my_ntk.is_constant(n))++num_c;});
 
-        /*this->incr_trav_id();
-        uint32_t trav_id = this->trav_id();
-        this->incr_trav_id();*/
-
         this->foreach_ci(
             [this](auto n)
             {
@@ -240,26 +242,12 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
          }
          else
          {
-             /*Ntk::foreach_co(
-                 [this](auto f)
-                 {
-                      *//*node was already visited*//*
-       if (this->visited(this->get_node(f)) == this->trav_id())
-           return;
-
-       create_topo_rec(this->get_node(f));
-                });*/
 
              this->incr_trav_id();
              uint32_t reset_trav_id = this->trav_id();
              this->incr_trav_id();
              mockturtle::detail::foreach_element( topo_order.begin()+num_c, topo_order.begin()+num_c+num_p+num_r,
                                                  [this](auto is){topo_wait.push_back(is);});
-             /*mockturtle::detail::foreach_element( topo_order.begin()+num_c, topo_order.begin()+num_c+num_p,
-                                                 [this](auto is){fov.foreach_fanout(is, [this, &is](auto fo){
-                                                    std::cout<<"Node:"<<is<<"Fanouts: "<<fo<<std::endl;
-                                                    });
-                                                 });*/
              push_iter = 0;
              create_rest_topo(topo_wait[push_iter], reset_trav_id);
          }
@@ -305,27 +293,10 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
         }
         if(my_bool){
             if(!my_ntk.is_pi(n) & !is_seq){
-                //std::cout<<"Pushed Node: "<<n<< std::endl;
                 topo_order.push_back(n);
             }
 
             this->set_visited(n, this->trav_id());
-
-            /*auto it = find(topo_wait.begin(), topo_wait.end(), n);
-            int index;
-            // If element was found
-            if (it != topo_wait.end())
-            {
-
-                // calculating the index
-                // of K
-                index = it - topo_wait.begin();
-            }
-            else {
-                // If the element is not
-                // present in the vector
-                std::cout << "-1" << std::endl;
-            }*/
 
             /*Push the outputs of a finally pushed node to the queue*/
             my_ntk.foreach_fanout(n, [&](auto fo){
@@ -333,17 +304,7 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                                        topo_wait.push_back(fo);
                                    }
                                    this->set_visited(fo, tid);
-                                   /*const auto fis = fanins(my_ntk, fo);
-                                   my_bool=false;
-                                   my_bool = std::all_of(fis.fanin_nodes.begin(), fis.fanin_nodes.end(), [&](const auto& fin_inp)
-                                                                {return this->visited(fin_inp) == this->trav_id();});
-                                   if (my_bool){
-                                       next_node = fo;
-                                   }*/
                                });
-
-
-            //topo_wait.erase(topo_wait.begin()+index);
             topo_wait.erase(topo_wait.begin()+push_iter);
             push_iter=0;
         }
@@ -353,9 +314,6 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
         }
 
         if(!topo_wait.empty()){
-            /*if(my_bool){
-                create_rest_topo(next_node, tid);
-            }*/
             create_rest_topo(topo_wait[push_iter], tid);
         }
     }

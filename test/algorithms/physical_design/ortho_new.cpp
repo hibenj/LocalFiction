@@ -17,6 +17,7 @@
 #include <fiction/layouts/gate_level_layout.hpp>
 #include <fiction/layouts/tile_based_layout.hpp>
 #include <fiction/networks/technology_network.hpp>
+#include "fiction/networks/sequential_technology_network.h"
 #include <fiction/technology/qca_one_library.hpp>
 
 #include <mockturtle/networks/aig.hpp>
@@ -79,18 +80,33 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::seq_one<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::seq_three<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
 
     const auto layout = orthogonal_new<gate_layout>(mux21, {}, &stats);
 
-    std::cout<<"clock number "<<layout.get_clock_number({5, 4, 0})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({4, 4, 0})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({3, 4, 0})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({2, 4, 0})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({1, 4, 0})<<std::endl;
+    /*layout.foreach_fanin(28,
+                      [&](const auto& f)
+                      {
+                          std::cout<<"has fanin 28"<<std::endl;
+                      });
+    layout.foreach_fanin(63,
+                         [&](const auto& f)
+                         {
+                             std::cout<<"has fanin 63"<<std::endl;
+                         });*/
+
+    /*std::cout<<"clock number "<<layout.get_clock_number({5, 1, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({6, 1, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({5, 2, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({6, 2, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({5, 3, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({6, 3, 1})<<std::endl;*/
+
+
+    gate_level_drvs(layout);
 
     fiction::debug::write_dot_layout(layout);
 

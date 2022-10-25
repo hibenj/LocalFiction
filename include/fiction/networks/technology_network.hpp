@@ -361,9 +361,9 @@ class technology_network : public mockturtle::klut_network
 #pragma region Nodes and signals
     uint32_t pi_index( node const& n ) const
     {
-        assert(is_pi(n));
+        //assert(is_pi(n));
         uint32_t i = -1;
-        foreach_pi( [&]( const auto& x, auto index ) {
+        foreach_ci( [&]( const auto& x, auto index ) {
                        if ( x == n )
                        {
                            i = index;

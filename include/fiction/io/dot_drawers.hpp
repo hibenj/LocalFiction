@@ -51,6 +51,12 @@ class technology_dot_drawer : public mockturtle::gate_dot_drawer<Ntk>
         {
             return "snow2";
         }
+
+        if (ntk.is_ro(n))
+        {
+            return "snow2";
+        }
+
         if constexpr (has_is_fanout_v<Ntk>)
         {
             if (ntk.is_fanout(n))
@@ -317,9 +323,19 @@ class simple_gate_layout_tile_drawer : public technology_dot_drawer<Lyt, DrawInd
                     return "PI";
                 }
 
+                if (lyt.is_ro_tile(t))
+                {
+                    return "RO";
+                }
+
                 if (lyt.is_po_tile(t))
                 {
                     return "PO";
+                }
+
+                if (lyt.is_ri_tile(t))
+                {
+                    return "RI";
                 }
             }
         }
@@ -355,7 +371,7 @@ class simple_gate_layout_tile_drawer : public technology_dot_drawer<Lyt, DrawInd
             if (lyt.is_empty_tile(t))
                 return "white";
 
-            if (lyt.is_pi_tile(t) || lyt.is_po_tile(t))
+            if (lyt.is_pi_tile(t) || lyt.is_po_tile(t) || lyt.is_ri_tile(t) || lyt.is_ro_tile(t))
                 return "snow2";
 
             return technology_dot_drawer<Lyt, DrawIndexes>::node_fillcolor(lyt, lyt.get_node(t));
@@ -891,6 +907,22 @@ void write_dot_layout(const Lyt& lyt, std::ostream& os, const Drawer& drawer = {
     lyt.foreach_node(
         [&lyt, &drawer, &edges](const auto& n)
         {
+            if(lyt.is_ro(n))
+            {
+                auto inc_tile = lyt.get_tile(n);
+                --inc_tile.x;
+
+                auto inc_node = lyt.get_node(inc_tile);
+
+                mockturtle::edge<Lyt> e{inc_node, n};
+
+                mockturtle::signal<Lyt> s{inc_node};
+
+                edges << fmt::format("{} -> {} [style={}];\n",
+                                     drawer.tile_id(lyt.get_tile(inc_node)),
+                                     drawer.tile_id(lyt.get_tile(n)), drawer.signal_style(lyt, s));
+
+            }
             lyt.foreach_fanin(n,
                               [&lyt, &drawer, &edges, &n](const auto& f)
                               {

@@ -237,7 +237,7 @@ class gate_level_layout : public ClockedLayout
         const auto n = static_cast<node>(strg->nodes.size());
         strg->nodes.emplace_back();     // empty node data
         strg->nodes[n].data[1].h1 = 2;  // assign identity function
-        strg->outputs.emplace_back(static_cast<signal>(t));
+        strg->outputs.insert(strg->outputs.cbegin()+num_pos(),static_cast<signal>(t));
         strg->data.node_names[n] = name.empty() ? fmt::format("po{}", num_pos()) : name;
         assign_node(t, n);
         ++sequential_inf.num_pos;
@@ -269,6 +269,12 @@ class gate_level_layout : public ClockedLayout
     {
         return std::find(strg->inputs.cbegin(), strg->inputs.cbegin()+num_pis(), n) != strg->inputs.cbegin()+num_pis();
     }
+
+    [[nodiscard]] bool is_ro(const node n) const noexcept
+    {
+        return std::find(strg->inputs.cbegin()+num_pis(), strg->inputs.cbegin()+num_pis()+num_ros(), n) != strg->inputs.cbegin()+num_pis()+num_ros();
+    }
+
     [[nodiscard]] bool is_ci(const node n) const noexcept
     {
         return std::find(strg->inputs.cbegin(), strg->inputs.cend(), n) != strg->inputs.cend();
@@ -284,11 +290,30 @@ class gate_level_layout : public ClockedLayout
         return is_pi(get_node(t));
     }
 
+    [[nodiscard]] bool is_ro_tile(const tile& t) const noexcept
+    {
+        return is_ro(get_node(t));
+    }
+
     [[nodiscard]] bool is_po(const node n) const noexcept
     {
         return std::find_if(strg->outputs.cbegin(), strg->outputs.cbegin()+num_pos(),
                             [this, &n](const auto& p) { return this->get_node(p.index) == n; }) != strg->outputs.cbegin()+num_pos();
     }
+
+    [[nodiscard]] bool is_ri(const node n) const noexcept
+    {
+        return std::find_if(strg->outputs.cbegin()+num_pos(), strg->outputs.cbegin()+num_pos()+num_ris(),
+                            [this, &n](const auto& p) { return this->get_node(p.index) == n; }) != strg->outputs.cbegin()+num_pos()+num_ris();
+    }
+    /*[[nodiscard]] bool is_po(const node n) const noexcept
+    {
+        return std::find_if(strg->outputs.cbegin(), strg->outputs.cbegin()+num_pos(),
+                            [this, &n](const auto& p) {
+                                auto no = this->get_node(p.index) == n;
+                                return no;
+                            }) != strg->outputs.cbegin()+num_pos();
+    }*/
 
     [[nodiscard]] bool is_co(const node n) const noexcept
     {
@@ -304,6 +329,11 @@ class gate_level_layout : public ClockedLayout
     [[nodiscard]] bool is_po_tile(const tile& t) const noexcept
     {
         return is_po(get_node(t));
+    }
+
+    [[nodiscard]] bool is_ri_tile(const tile& t) const noexcept
+    {
+        return is_ri(get_node(t));
     }
 
     [[nodiscard]] node pi_at(const uint32_t index) const noexcept

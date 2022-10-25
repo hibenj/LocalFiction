@@ -67,8 +67,8 @@ template <typename Lyt, typename Ntk>
     return pi_map;
 }
 /**
- * Reserve primary input nodes in a layout in the same order as they appear in a network. This is a useful function to
- * call first when a layout is to be created from a network. The primary input nodes then exist in the layout but are
+ * Reserve register output nodes in a layout in the same order as they appear in a network. This is a useful function to
+ * call first when a layout is to be created from a network. The register output nodes then exist in the layout but are
  * not placed anywhere and also do not have names. They are just registered to preserve their order.
  *
  * This function can be seen as an equivalent to mockturtle::initialize_copy_network but for layouts.

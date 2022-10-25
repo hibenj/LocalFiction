@@ -8,6 +8,11 @@
 #include "mockturtle/networks/sequential.hpp"
 #include "technology_network.hpp"
 
+/**
+ * Template specialization of mockturtle::sequential for fiction::technology_networks
+ * This is part of the Distribution Newtork III: Sequential Circuits
+ */
+
 namespace mockturtle
 {
 
@@ -41,6 +46,7 @@ class mockturtle::sequential<fiction::technology_network, false> : public fictio
         static_assert(std::is_same_v<base_type, klut_network> || std::is_same_v<base_type, cover_network>,
                       "Sequential interfaces extended for unknown network type. Please check the compatibility of implementations.");
     }
+
     uint32_t ri_index(signal const& s) const
     {
         uint32_t i = -1;
@@ -57,9 +63,19 @@ class mockturtle::sequential<fiction::technology_network, false> : public fictio
         return i;
     }
 
+    uint32_t ro_index( node const& n ) const
+    {
+        return Ntk::pi_index( n ) - _sequential_storage->num_pis;
+    }
+
     node ri_to_ro(signal const& s) const
     {
         return *(this->_storage->inputs.begin() + _sequential_storage->num_pis + ri_index(s));
+    }
+
+    signal ro_to_ri( node const& n ) const
+    {
+        return (*( this->_storage->outputs.begin() + _sequential_storage->num_pos + ro_index(n) - _sequential_storage->num_pis )).data;
     }
 
     signal create_pi()
@@ -155,10 +171,10 @@ class mockturtle::sequential<fiction::technology_network, false> : public fictio
         return *(this->_storage->inputs.begin() + index);
     }
 
-    const mockturtle::node_pointer<0> po_at(uint32_t index) const
+    signal po_at(uint32_t index) const
     {
         assert(index < _sequential_storage->num_pos);
-        return *(this->_storage->outputs.begin() + index);
+        return (*(this->_storage->outputs.begin() + index)).data;
     }
 
     node ci_at(uint32_t index) const
@@ -167,10 +183,10 @@ class mockturtle::sequential<fiction::technology_network, false> : public fictio
         return *(this->_storage->inputs.begin() + index);
     }
 
-    const mockturtle::node_pointer<0> co_at(uint32_t index) const
+    signal co_at(uint32_t index) const
     {
         assert(index < this->_storage->outputs.size());
-        return *(this->_storage->outputs.begin() + index);
+        return (*(this->_storage->outputs.begin() + index)).data;
     }
 
     node ro_at(uint32_t index) const
@@ -179,10 +195,10 @@ class mockturtle::sequential<fiction::technology_network, false> : public fictio
         return *(this->_storage->inputs.begin() + _sequential_storage->num_pis + index);
     }
 
-    const mockturtle::node_pointer<0> ri_at(uint32_t index) const
+    signal ri_at(uint32_t index) const
     {
         assert(index < this->_storage->outputs.size() - _sequential_storage->num_pos);
-        return *(this->_storage->outputs.begin() + _sequential_storage->num_pos + index);
+        return (*(this->_storage->outputs.begin() + _sequential_storage->num_pos + index)).data;
     }
 
     void set_register(uint32_t index, register_t reg)
