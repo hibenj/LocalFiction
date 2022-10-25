@@ -256,10 +256,8 @@ place(Lyt& lyt, const tile<Lyt>& t, const Ntk& ntk, const mockturtle::node<Ntk>&
             {
                 return lyt.create_or(a, b, t);
             }
-            else  // constant signal c points to 0
-            {
-                return lyt.create_and(a, b, t);
-            }
+            // constant signal c points to 0
+            return lyt.create_and(a, b, t);
         }
     }
     // more gate types go here
@@ -271,10 +269,8 @@ place(Lyt& lyt, const tile<Lyt>& t, const Ntk& ntk, const mockturtle::node<Ntk>&
             {
                 return lyt.create_node({a, b, *c}, ntk.node_function(n), t);
             }
-            else
-            {
-                return lyt.create_node({a, b}, ntk.node_function(n), t);
-            }
+
+            return lyt.create_node({a, b}, ntk.node_function(n), t);
         }
     }
 
@@ -346,6 +342,8 @@ template <typename Lyt, typename Ntk>
 
     const auto fc = fanins(ntk, n);
 
+    // NOLINTBEGIN(*-else-after-return)
+
     if (const auto num_fanins = fc.fanin_nodes.size(); num_fanins == 0)
     {
         return place(lyt, t, ntk, n);
@@ -372,6 +370,8 @@ template <typename Lyt, typename Ntk>
         return place(lyt, t, ntk, n, node2pos[fanin_signal_a], node2pos[fanin_signal_b], node2pos[fanin_signal_c]);
     }
     // more fanin sizes go here
+
+    // NOLINTEND(*-else-after-return)
 
     assert(false);  // unsupported number of fanins
     return {};      // fix -Wreturn-type warning
@@ -428,10 +428,8 @@ struct branching_signal_container
         {
             return (*branch)->lyt_signal;
         }
-        else
-        {
-            return {};
-        }
+
+        return {};
     }
     /**
      * Updates the given node's branch by another layout signal, thereby, creating a new branch or updating the position
@@ -494,6 +492,8 @@ place(Lyt& lyt, const tile<Lyt>& t, const Ntk& ntk, const mockturtle::node<Ntk>&
 
     const auto fc = fanins(ntk, n);
 
+    // NOLINTBEGIN(*-else-after-return)
+
     if (const auto num_fanins = fc.fanin_nodes.size(); num_fanins == 0)
     {
         return place(lyt, t, ntk, n);
@@ -521,6 +521,8 @@ place(Lyt& lyt, const tile<Lyt>& t, const Ntk& ntk, const mockturtle::node<Ntk>&
                      node2pos[fanin_signal_c][n]);
     }
     // more fanin sizes go here
+
+    // NOLINTEND(*-else-after-return)
 
     assert(false);  // unsupported number of fanins
     return {};      // fix -Wreturn-type warning

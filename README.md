@@ -3,10 +3,13 @@
 [![Ubuntu CI](https://github.com/marcelwa/fiction/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/marcelwa/fiction/actions/workflows/ubuntu.yml)
 [![macOS CI](https://github.com/marcelwa/fiction/actions/workflows/macos.yml/badge.svg?branch=main)](https://github.com/marcelwa/fiction/actions/workflows/macos.yml)
 [![Windows CI](https://github.com/marcelwa/fiction/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/marcelwa/fiction/actions/workflows/windows.yml)
+[![CodeQL](https://github.com/marcelwa/fiction/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/marcelwa/fiction/actions/workflows/codeql-analysis.yml)
+[![Docker Image](https://img.shields.io/github/workflow/status/marcelwa/fiction/Docker%20Image%20CI?label=Docker&logo=Docker)](https://github.com/marcelwa/fiction/actions/workflows/docker-image.yml)
 [![codecov](https://codecov.io/gh/marcelwa/fiction/branch/main/graph/badge.svg?token=SUPC5N6KFU)](https://codecov.io/gh/marcelwa/fiction)
 [![Documentation Status](https://img.shields.io/readthedocs/fiction?logo=readthedocs)](https://fiction.readthedocs.io/)
 [![Release](https://img.shields.io/github/v/tag/marcelwa/fiction?label=fiction&logo=github&logoColor=darkgray)](https://github.com/marcelwa/fiction/releases)
 [![License](https://img.shields.io/github/license/marcelwa/fiction)](https://github.com/marcelwa/fiction/blob/main/LICENSE.txt)
+[![Clang-Tidy](https://img.shields.io/github/workflow/status/marcelwa/fiction/Clang-Tidy%20Review?label=Clang-Tidy&logo=LLVM)](https://github.com/marcelwa/fiction/actions/workflows/clang-tidy-review.yml)
 [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/marcelwa/fiction.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/marcelwa/fiction/context:cpp)
 
 This code base provides a framework for **fi**eld-**c**oupled **t**echnology-**i**ndependent **o**pen **n**anocomputing
@@ -99,7 +102,7 @@ Many thanks to Umberto Garlando, Fabrizio Riente, and Giuliana Beretta for their
 
 Gate libraries:
 
-- [Bestagon](https://fiction.readthedocs.io/en/latest/technology/gate_libraries.html#sidb-bestagon-library)
+- [Bestagon](https://dl.acm.org/doi/10.1145/3489517.3530525)
 
 File formats:
 
