@@ -2,8 +2,8 @@
 // Created by Hien Benjamin on 06.10.2022.
 //
 
-#ifndef FICTION_SEQUENTIAL_TECHNOLOGY_NETWORK_H
-#define FICTION_SEQUENTIAL_TECHNOLOGY_NETWORK_H
+#ifndef FICTION_SEQUENTIAL_TECHNOLOGY_NETWORK_HPP
+#define FICTION_SEQUENTIAL_TECHNOLOGY_NETWORK_HPP
 
 #include "mockturtle/networks/sequential.hpp"
 #include "technology_network.hpp"
@@ -17,7 +17,7 @@ namespace mockturtle
 {
 
 template <>
-class mockturtle::sequential<fiction::technology_network, false> : public fiction::technology_network
+class sequential<fiction::technology_network, false> : public fiction::technology_network
 {
   public:
     using Ntk       = fiction::technology_network;
@@ -310,4 +310,4 @@ class mockturtle::sequential<fiction::technology_network, false> : public fictio
 };
 }
 
-#endif  // FICTION_SEQUENTIAL_TECHNOLOGY_NETWORK_H
+#endif  // FICTION_SEQUENTIAL_TECHNOLOGY_NETWORK_HPP

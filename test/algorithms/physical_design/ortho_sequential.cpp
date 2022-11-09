@@ -4,13 +4,13 @@
 #include "catch.hpp"
 #include "fiction/algorithms/network_transformation/fanout_inverter_balancing.hpp"
 #include "fiction/algorithms/network_transformation/fanout_substitution.hpp"
+#include "fiction/networks/sequential_technology_network.hpp"
 #include "fiction/networks/views/topo_view_input_sort.hpp"
 #include "mockturtle/networks/sequential.hpp"
 #include "mockturtle/views/topo_view.hpp"
 #include "utils/blueprints/network_blueprints.hpp"
 
 #include <fiction/networks/technology_network.hpp>
-#include "fiction/networks/sequential_technology_network.h"
 
 using namespace fiction;
 

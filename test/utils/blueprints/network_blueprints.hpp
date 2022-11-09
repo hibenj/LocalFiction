@@ -520,11 +520,7 @@ Ntk TEST_maj_two_buf()
     const auto x2    = ntk.create_pi("b");
     const auto x3    = ntk.create_pi("c");
 
-    const auto n1  = ntk.create_not(x1);
-    const auto n2  = ntk.create_not(x2);
-    const auto n3  = ntk.create_not(x3);
-
-    const auto m1 = ntk.create_maj(n1, n2, n3);
+    const auto m1 = ntk.create_maj(x1, x2, x3);
     const auto a1 = ntk.create_and(x1, x2);
     const auto o1 = ntk.create_or(x2, x3);
 
@@ -622,11 +618,7 @@ Ntk TEST_maj_maj_buf()
     const auto x2    = ntk.create_pi("b");
     const auto x3    = ntk.create_pi("c");
 
-    const auto n1  = ntk.create_not(x1);
-    const auto n2  = ntk.create_not(x2);
-    const auto n3  = ntk.create_not(x3);
-
-    const auto m1 = ntk.create_maj(n1, n2, n3);
+    const auto m1 = ntk.create_maj(x1, x2, x3);
 
     const auto a1 = ntk.create_and(x1, x2);
     const auto a2 = ntk.create_and(x2, x3);

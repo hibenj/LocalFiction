@@ -204,15 +204,17 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
         /* constants and PIs */
         const auto c0 = this->get_node(this->get_constant(false));
         topo_order.push_back(c0);
+        ++num_c;
         this->set_visited(c0, this->trav_id());
 
         if (const auto c1 = this->get_node(this->get_constant(true)); this->visited(c1) != this->trav_id())
         {
             topo_order.push_back(c1);
             this->set_visited(c1, this->trav_id());
+            ++num_c;
         }
 
-        this->foreach_node([this](auto n){if(my_ntk.is_constant(n))++num_c;});
+        //this->foreach_node([this](auto n){if(my_ntk.is_constant(n))++num_c;});
 
         this->foreach_ci(
             [this](auto n)
@@ -233,6 +235,13 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
             topo_order.push_back(third_wait[iter]);
             this->set_visited(third_wait[iter], this->trav_id());
         }
+
+        this->foreach_ci(
+            [this](auto n)
+            {
+                if (this->visited(n) != this->trav_id())
+                {topo_order.push_back(n);}
+            });
 
         if (start_signal)
          {

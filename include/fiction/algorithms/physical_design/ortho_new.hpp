@@ -6,14 +6,19 @@
 #define FICTION_ORTHO_NEW_HPP
 
 #include "fiction/algorithms/network_transformation/fanout_inverter_balancing.hpp"
-#include "fiction/networks/technology_network.hpp"
-#include "fiction/networks/sequential_technology_network.h"
 #include "fiction/algorithms/physical_design/orthogonal.hpp"
-#include "fiction/networks/views/topo_view_input_sort.hpp"
+#include "fiction/networks/sequential_technology_network.hpp"
+#include "fiction/networks/technology_network.hpp"
 #include "fiction/networks/views/reverse_view.hpp"
+#include "fiction/networks/views/topo_view_input_sort.hpp"
+
+#include <vector>
 
 #include <math.h>
-#include <vector>
+
+#if (PROGRESS_BARS)
+#include <mockturtle/utils/progress_bar.hpp>
+#endif
 
 int create_ten(){
     int a = 10;
@@ -783,9 +788,9 @@ class orthogonal_new_impl
 
         std::cout<<"Numcis: "<<layout.num_cis()<<std::endl;
 
-        std::vector<std::pair<unsigned __int64, unsigned __int64>> resolve_rows;
+        std::vector<std::pair<int, int>> resolve_rows;
 
-        std::vector<std::pair<unsigned __int64, unsigned __int64>> resolve_columns;
+        std::vector<std::pair<int, int>> resolve_columns;
 
 
 #if (PROGRESS_BARS)
@@ -794,7 +799,7 @@ class orthogonal_new_impl
 #endif
 
         ntk.foreach_node(
-            [&, this](const auto& n)
+            [&, this](const auto& n, [[maybe_unused]] const auto i)
             {
                 // do not place constants
                 if (!ctn.color_ntk.is_constant(n))
@@ -880,9 +885,96 @@ class orthogonal_new_impl
                         {
                             std::cout << "maj buf " << maj_buf[n_buf] << std::endl;
                         }*/
+                        /**insert buffer for inputs colored south**/
+                        if(auto clr = ctn.color_ntk.color(n); ctn.color_ntk.is_ci(pre1) && clr != ctn.color_east)
+                        {
+                            pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
+                            ++latest_pos.x;
+                        }
+                        if(auto clr = ctn.color_ntk.color(n); ctn.color_ntk.is_ci(pre2) && clr != ctn.color_east)
+                        {
+                            pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
+                            ++latest_pos.x;
+                        }
+                        if(auto clr = ctn.color_ntk.color(n); ctn.color_ntk.is_ci(pre3) && clr != ctn.color_east)
+                        {
+                            pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {latest_pos.x + 1, pre3_t.y}));
+                            ++latest_pos.x;
+                        }
+                        /**********************************************************************************************/
+
+                        /**insert buffer when a fan-out has two same colored outputs
+                        this should be resolved in the coloring**/
+                        if(auto fos = fanouts(ctn.color_ntk, pre1); ctn.color_ntk.is_fanout(pre1) && fos.size()>1)
+                        {
+                            if(std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }) ||
+                                std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_east; })  )
+                            {
+                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                                pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
+                            }
+                        }
+                        if(auto fos = fanouts(ctn.color_ntk, pre2); ctn.color_ntk.is_fanout(pre2) && fos.size()>1)
+                        {
+                            if(std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }) ||
+                                std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_east; })  )
+                            {
+                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                                pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre1_t.y}));
+                            }
+                        }
+                        if(auto fos = fanouts(ctn.color_ntk, pre3); ctn.color_ntk.is_fanout(pre3) && fos.size()>1)
+                        {
+                            if(std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }) ||
+                                std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_east; })  )
+                            {
+                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                                pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {latest_pos.x + 1, pre1_t.y}));
+                            }
+                        }
+                        /**********************************************************************************************/
 
                         // Majority gates placed south are just wired south and then placed east (this is due to the properties of the majority delay network)
-                        if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_south)
+                        if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_null)
+                        {
+                            if (auto fos = fanouts(ctn.color_ntk, pre1);
+                                ctn.color_ntk.is_fanout(pre1) && fos.size() > 1)
+                            {
+                                if (ctn.color_ntk.is_maj(fos[0]) && ctn.color_ntk.is_maj(fos[1]))
+                                {
+                                    pre1_t =
+                                        static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
+                                    ++latest_pos.x;
+                                }
+                            }
+                            if (auto fos = fanouts(ctn.color_ntk, pre2);
+                                ctn.color_ntk.is_fanout(pre2) && fos.size() > 1)
+                            {
+                                if (ctn.color_ntk.is_maj(fos[0]) && ctn.color_ntk.is_maj(fos[1]))
+                                {
+                                    pre2_t =
+                                        static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
+                                    ++latest_pos.x;
+                                }
+                            }
+                            if (auto fos = fanouts(ctn.color_ntk, pre3);
+                                ctn.color_ntk.is_fanout(pre3) && fos.size() > 1)
+                            {
+                                if (ctn.color_ntk.is_maj(fos[0]) && ctn.color_ntk.is_maj(fos[1]))
+                                {
+                                    pre3_t =
+                                        static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {latest_pos.x + 1, pre3_t.y}));
+                                    ++latest_pos.x;
+                                }
+                            }
+                        }
+                        if (const auto clr = ctn.color_ntk.color(n); clr != ctn.color_east)
                         {
                             pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, latest_pos.y + 1}));
                             pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre1_t.y + 2}));
@@ -1202,6 +1294,17 @@ class orthogonal_new_impl
                         /*for(int n_buf = 0; n_buf < maj_buf.size(); ++n_buf){
                             std::cout << "maj buf: " << maj_buf[n_buf] << std::endl;
                         }*/
+                        /**insert buffer for inputs colored south**/
+                        if(auto clr = ctn.color_ntk.color(pre1); ctn.color_ntk.is_ci(pre1) && clr != ctn.color_east)
+                        {
+                            pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
+                            ++latest_pos.x;
+                        }
+                        if(auto clr = ctn.color_ntk.color(pre2); ctn.color_ntk.is_ci(pre2) && clr != ctn.color_east)
+                        {
+                            pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
+                            ++latest_pos.x;
+                        }
 
                         /**insert buffer when a fan-out has two same colored outputs
                         this should be resolved in the coloring**/
@@ -1239,6 +1342,9 @@ class orthogonal_new_impl
                             t = {latest_pos.x, pre2_t.y};
 
                             // each 2-input gate has one incoming bent wire
+                            /*if(maj_buf.size()>0){
+                                pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {t.x + 1, pre1_t.y}));
+                            }else*/
                             pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {t.x + 1, pre1_t.y}));
 
                             ++latest_pos.x;
@@ -1259,7 +1365,7 @@ class orthogonal_new_impl
                                         /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
                                         //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
                                         //resolve_rows.push_back(row_resolve_to_column);
-                                        pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
+                                        pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x +1, pre1_t.y}));
 
 
                                         auto pre_clock = layout.get_clock_number({pre1_t});
@@ -1280,7 +1386,7 @@ class orthogonal_new_impl
                                     {
                                         std::cout << "CASE: TWO" << '\n';
 
-                                        pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t.x + 2, pre2_t.y}));
+                                        pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t.x + 1, pre2_t.y}));
                                         //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
                                         //resolve_rows.push_back(row_resolve_to_column);
 

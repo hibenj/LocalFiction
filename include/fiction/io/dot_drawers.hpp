@@ -376,6 +376,7 @@ class simple_gate_layout_tile_drawer : public technology_dot_drawer<Lyt, DrawInd
             }
 
             if (lyt.is_pi_tile(t) || lyt.is_po_tile(t) || lyt.is_ri_tile(t) || lyt.is_ro_tile(t))
+            {
                 return "snow2";
             }
 
