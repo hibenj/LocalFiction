@@ -513,7 +513,7 @@ Ntk TEST_maj_one_buf()
 }
 
 template <typename Ntk>
-Ntk TEST_maj_two_buf()
+Ntk TEST_maj_two_pluslogic_buf()
 {
     Ntk ntk{};
     const auto x1    = ntk.create_pi("a");
@@ -533,6 +533,90 @@ Ntk TEST_maj_two_buf()
 
     return ntk;
 }
+
+template <typename Ntk>
+Ntk TEST_maj_two_plus_buf()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("d");
+
+    const auto m1 = ntk.create_maj(x1, x2, x3);
+    const auto a1 = ntk.create_or(x3, x4);
+
+    const auto a2 = ntk.create_and(m1, a1);
+    const auto a3 = ntk.create_and(x4, a2);
+
+    ntk.create_po(a3, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk TEST_maj_two_buf()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("c");
+    const auto x5    = ntk.create_pi("c");
+
+    const auto m1 = ntk.create_maj(x1, x2, x3);
+    const auto a1 = ntk.create_and(m1, x4);
+    const auto a2 = ntk.create_and(a1, x5);
+
+    ntk.create_po(a2, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk TEST_maj_three_buf()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("c");
+    const auto x5    = ntk.create_pi("c");
+    const auto x6    = ntk.create_pi("c");
+
+    const auto m1 = ntk.create_maj(x1, x2, x3);
+    const auto a1 = ntk.create_and(m1, x4);
+    const auto a2 = ntk.create_and(a1, x5);
+    const auto a3 = ntk.create_and(a2, x6);
+
+    ntk.create_po(a3, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk TEST_maj_four_buf()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x4    = ntk.create_pi("c");
+    const auto x5    = ntk.create_pi("c");
+    const auto x6    = ntk.create_pi("c");
+    const auto x7    = ntk.create_pi("c");
+
+    const auto m1 = ntk.create_maj(x1, x2, x3);
+    const auto a1 = ntk.create_and(m1, x4);
+    const auto a2 = ntk.create_and(a1, x5);
+    const auto a3 = ntk.create_and(a2, x6);
+    const auto a4 = ntk.create_and(a3, x7);
+
+    ntk.create_po(a4, "f");
+
+    return ntk;
+}
+
 
 template <typename Ntk>
 Ntk TEST_maj_reroute()

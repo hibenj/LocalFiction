@@ -120,10 +120,12 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::TEST_maj_maj_buf<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::TEST_maj_three_buf<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
 
-    auto layout = orthogonal_new<gate_layout>(mux21);
+    orthogonal_physical_design_stats stats{};
+
+    auto layout = orthogonal_new<gate_layout>(mux21, {}, &stats);
 
     gate_level_drvs(layout);
 
@@ -141,10 +143,11 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::TEST_maj_maj_buf<mockturtle::names_view<mockturtle::aig_network>>();
+    auto mux21 = blueprints::TEST_maj_two_plus_buf<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
+    orthogonal_physical_design_stats stats{};
 
-    auto layout = orthogonal_new<gate_layout>(mux21);
+    auto layout = orthogonal_new<gate_layout>(mux21, {}, &stats);
 
     gate_level_drvs(layout);
 

@@ -792,7 +792,6 @@ class orthogonal_new_impl
 
         std::vector<std::pair<int, int>> resolve_columns;
 
-
 #if (PROGRESS_BARS)
         // initialize a progress bar
         mockturtle::progress_bar bar{static_cast<uint32_t>(ctn.color_ntk.size()), "[i] arranging layout: |{0}|"};
@@ -805,13 +804,13 @@ class orthogonal_new_impl
                 if (!ctn.color_ntk.is_constant(n))
                 {
                     //Resolve conflicts with Majority buffers
-                    /*ctn.color_ntk.foreach_fanin(n, [&](const auto& fin)
+                    ctn.color_ntk.foreach_fanin(n, [&](const auto& fin)
                                                 {
                                                     auto fin_del = ntk.get_node(fin);
-                                                    if(ctn.color_ntk.color(n)==ctn.color_east)
+                                                    if(ctn.color_ntk.color(n)==ctn.color_east || (ctn.color_ntk.color(n)==ctn.color_south && ctn.color_ntk.is_ci(fin_del)))
                                                     {
                                                         auto pre_t = static_cast<tile<Lyt>>(node2pos[fin_del]);
-                                                        for (const auto &item : resolve_rows) {
+                                                        for (const auto item : resolve_rows) {
                                                             if (item.first == pre_t.y) {
                                                                 pre_t = static_cast<tile<Lyt>>(wire_east(layout, pre_t, {item.second, item.first}));
                                                                 node2pos[fin_del] = wire_south(layout, pre_t, {pre_t.x, latest_pos.y});
@@ -824,7 +823,7 @@ class orthogonal_new_impl
                                                     {
                                                         auto pre_t = static_cast<tile<Lyt>>(node2pos[fin_del]);
 
-                                                        for (const auto &item : resolve_columns) {
+                                                        for (const auto item : resolve_columns) {
                                                             if (item.first == pre_t.x) {
                                                                 pre_t = static_cast<tile<Lyt>>(wire_south(layout, pre_t, {item.first, item.second}));
                                                                 node2pos[fin_del] = wire_east(layout, pre_t, {latest_pos.x, pre_t.y});
@@ -833,7 +832,7 @@ class orthogonal_new_impl
                                                             }
                                                         }
                                                     }
-                                                });*/
+                                                });
 
                     bool plc_ro = false;
                     // if node is a RO, move it to its correct position
@@ -1011,8 +1010,10 @@ class orthogonal_new_impl
                                 {
                                     //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
                                     pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {latest_pos.x + 1, pre3_t.y}));
-                                    //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre3_t.y+1, pre3_t.x);
-                                    //resolve_rows.push_back(row_resolve_to_column);
+                                    const auto uno = pre3_t.y+1;
+                                    const auto due = pre3_t.x;
+                                    const std::pair<int, int> row_resolve_to_column = {uno, due};
+                                    resolve_rows.push_back(row_resolve_to_column);
 
 
                                     auto pre_clock = layout.get_clock_number({pre3_t});
@@ -1030,9 +1031,9 @@ class orthogonal_new_impl
                                     {
                                         pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, pre3_t.y+2}));
                                     }
-                                    /*else
+                                    else
                                     {
-                                        for (const auto &item : resolve_rows) {
+                                        for (const auto item : resolve_rows) {
                                             if (item.first == pre3_t.y) {
                                                 pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {item.second, item.first}));
                                                 pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, latest_pos.y}));
@@ -1040,12 +1041,14 @@ class orthogonal_new_impl
                                                 break;
                                             }
                                         }
-                                    }*/
+                                    }
 
                                     //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
                                     pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
-                                    //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
-                                    //resolve_rows.push_back(row_resolve_to_column);
+                                    const auto uno = pre2_t.y+1;
+                                    const auto due = pre2_t.x;
+                                    const std::pair<int, int> row_resolve_to_column = {uno, due};
+                                    resolve_rows.push_back(row_resolve_to_column);
 
 
                                     auto pre_clock = layout.get_clock_number({pre2_t});
@@ -1063,9 +1066,9 @@ class orthogonal_new_impl
                                     {
                                         pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y+2}));
                                     }
-                                    /*else
+                                    else
                                     {
-                                        for (const auto &item : resolve_rows) {
+                                        for (const auto item : resolve_rows) {
                                             if (item.first == pre2_t.y) {
                                                 pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {item.second, item.first}));
                                                 pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, latest_pos.y}));
@@ -1073,12 +1076,14 @@ class orthogonal_new_impl
                                                 break;
                                             }
                                         }
-                                    }*/
+                                    }
 
 
                                     pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
-                                    //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
-                                    //resolve_rows.push_back(row_resolve_to_column);
+                                    const auto uno = pre1_t.y+1;
+                                    const auto due = pre1_t.x;
+                                    const std::pair<int, int> row_resolve_to_column = {uno, due};
+                                    resolve_rows.push_back(row_resolve_to_column);
 
 
                                     auto pre_clock = layout.get_clock_number({pre1_t});
@@ -1314,7 +1319,8 @@ class orthogonal_new_impl
                             if(std::all_of(fos.cbegin(), fos.cend(),
                                         [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }))
                             {
-                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                                //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
+                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_east);
                             }
                         }
                         if(auto fos = fanouts(ctn.color_ntk, pre2); ctn.color_ntk.is_fanout(pre2) && fos.size()>1)
@@ -1323,7 +1329,8 @@ class orthogonal_new_impl
                             if(std::all_of(fos.cbegin(), fos.cend(),
                                             [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }))
                             {
-                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                                //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
+                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_east);
                             }
                         }
                         /**********************************************************************************************/
@@ -1363,8 +1370,11 @@ class orthogonal_new_impl
                                     {
                                         std::cout << "CASE: ONE" << '\n';
                                         /*For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer*/
-                                        //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre1_t.y+1, pre1_t.x);
-                                        //resolve_rows.push_back(row_resolve_to_column);
+                                        const auto uno = pre1_t.y+1;
+                                        const auto due = pre1_t.x;
+                                        const std::pair<int, int> row_resolve_to_column = {uno, due};
+                                        resolve_rows.push_back(row_resolve_to_column);
+
                                         pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x +1, pre1_t.y}));
 
 
@@ -1387,8 +1397,10 @@ class orthogonal_new_impl
                                         std::cout << "CASE: TWO" << '\n';
 
                                         pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {t.x + 1, pre2_t.y}));
-                                        //std::pair<unsigned __int64, unsigned __int64> row_resolve_to_column (pre2_t.y+1, pre2_t.x);
-                                        //resolve_rows.push_back(row_resolve_to_column);
+                                        const auto uno = pre2_t.y+1;
+                                        const auto due = pre2_t.x;
+                                        const std::pair<int, int> row_resolve_to_column = {uno, due};
+                                        resolve_rows.push_back(row_resolve_to_column);
 
                                         auto pre_clock = layout.get_clock_number({pre2_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
@@ -1498,9 +1510,10 @@ class orthogonal_new_impl
                                     {
                                         pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, t.y + 2}));
                                         //std::cout<<"wire to "<<"X: "<<pre1_t.x<<"Y: "<<pre1_t.y<<std::endl;
-
-                                        //std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre1_t.x + 1, pre1_t.y);
-                                        //resolve_rows.push_back(column_resolve_to_row);
+                                        const auto uno = pre1_t.x + 1;
+                                        const auto due = pre1_t.y;
+                                        const std::pair<int, int> column_resolve_to_row = {uno, due};
+                                        resolve_rows.push_back(column_resolve_to_row);
 
                                         auto pre_clock = layout.get_clock_number({pre1_t});
                                         for(int iter = maj_buf[path_n]; iter > 0; --iter)
@@ -1524,8 +1537,10 @@ class orthogonal_new_impl
                                     else
                                     {
                                         //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
-                                        //std::pair<unsigned __int64, unsigned __int64> column_resolve_to_row (pre2_t.x + 1, pre2_t.y);
-                                        //resolve_rows.push_back(column_resolve_to_row);
+                                        const auto uno = pre2_t.x + 1;
+                                        const auto due = pre2_t.y;
+                                        const std::pair<int, int> column_resolve_to_row = {uno, due};
+                                        resolve_rows.push_back(column_resolve_to_row);
 
                                         pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
                                         //std::cout<<"wire to "<<"X: "<<pre2_t.x<<"Y: "<<pre2_t.y<<std::endl;
@@ -1865,7 +1880,7 @@ class orthogonal_new_impl
 
                     });
             }
-            layout.resize({22 , 14, 1});
+            //layout.resize({22 , 14, 1});
             //++latest_pos.x;
         }
 
