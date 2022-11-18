@@ -642,11 +642,25 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                 });
         });
 
+    ntk.foreach_ci(
+    [&](const auto& nd) {
+        ntk.foreach_fanout(nd,
+                               [&](const auto& fon) {
+                                   auto color = ctn.color_east;
+                                   const auto fo_edges = fanin_edges(ctn.color_ntk, fon);
+                                   std::for_each(fo_edges.fanin_edges.cbegin(), fo_edges.fanin_edges.cend(),
+                                                 [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
+                                   paint_if(ctn, fon, color);
+                               });
+
+        });
+
 #if (PROGRESS_BARS)
     // initialize a progress bar
     mockturtle::progress_bar bar{static_cast<uint32_t>(ctn.color_ntk.num_gates()),
                                  "[i] determining relative positions: |{0}|"};
 #endif
+
 
     rtv.foreach_gate(
         [&](const auto& n, [[maybe_unused]] const auto i)
@@ -1672,11 +1686,28 @@ class orthogonal_new_impl
         //
         tile<Lyt> ri_tile{};
         int repos{0};
+        int south_ri{0};
+        bool south_ri_b{false};
 
         if constexpr (mockturtle::has_is_ro_v<Ntk>)
         {
             if (!ctn.color_ntk.is_combinational())
             {
+                ctn.color_ntk.foreach_ri(
+            [&](const auto& n)
+            {
+                if (ctn.color_ntk.is_ri(n))
+                {
+                    auto n_s = node2pos[n];
+                    tile<Lyt> ri_tile{};
+                    if (!is_eastern_po_orientation_available(ctn, n) && !ctn.color_ntk.is_po(n))
+                    {
+                        tile<Lyt> ri_tile_s = layout.south(static_cast<tile<Lyt>>(n_s));
+                        ri_tile ={ri_tile_s.x, latest_pos.y};
+                        south_ri = ri_tile.y - ri_tile_s.y;
+                    }
+                    }});
+
                 ctn.color_ntk.foreach_ri(
                     [&](const auto& n)
                     {
@@ -1705,7 +1736,17 @@ class orthogonal_new_impl
                                 ++repos;
                                 //layout.resize({latest_pos.x + (num_ris-1)*4, latest_pos.y-1, 1});
                                 layout.resize({latest_pos.x + reg_number - 1, latest_pos.y - 1, 1});
-                                ri_tile = layout.south(static_cast<tile<Lyt>>(n_s));
+                                tile<Lyt> ri_tile_s = layout.south(static_cast<tile<Lyt>>(n_s));
+                                ri_tile ={ri_tile_s.x, latest_pos.y-1};
+                                if (south_ri>0){south_ri_b = true;}
+                            }
+                            if(south_ri_b)
+                            {
+                                std::cout<<n<<"Ri_tile coordinates"<<"X:"<<ri_tile.x<<"Y:"<<ri_tile.y<<std::endl;
+                                auto safe_ri_tile = ri_tile;
+                                ri_tile ={ri_tile.x, ri_tile.y-2};
+                                ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, ri_tile.y+3}));
+                                ri_tile = safe_ri_tile;
                             }
                             /*if(ctn.color_ntk.is_maj(n))
                             {
@@ -1726,15 +1767,29 @@ class orthogonal_new_impl
                             // place PO at the border and connect it by wire segments
                             else
                             {
-                                const auto anker = layout.create_buf(n_s, ri_tile);
+                                if(south_ri_b)
+                                {
+                                    const tile<Lyt> anker = {ri_tile.x, ri_tile.y};
+                                    ri_tile = layout.eastern_border_of(ri_tile);
+                                    layout.create_ri(wire_east(layout, anker, ri_tile),
+                                                     ctn.color_ntk.has_output_name(po_counter) ?
+                                                         ctn.color_ntk.get_output_name(po_counter++) :
+                                                         fmt::format("po{}", po_counter++),
+                                                     ri_tile);
+                                }else
+                                {
+                                    const auto anker = layout.create_buf(n_s, {ri_tile.x, ri_tile.y});
 
-                                ri_tile = layout.eastern_border_of(ri_tile);
+                                    ri_tile = layout.eastern_border_of(ri_tile);
 
-                                layout.create_ri(wire_east(layout, static_cast<tile<Lyt>>(anker), ri_tile),
-                                                 ctn.color_ntk.has_output_name(po_counter) ?
-                                                     ctn.color_ntk.get_output_name(po_counter++) :
-                                                     fmt::format("po{}", po_counter++),
-                                                 ri_tile);
+                                    layout.create_ri(wire_east(layout, static_cast<tile<Lyt>>(anker), ri_tile),
+                                                     ctn.color_ntk.has_output_name(po_counter) ?
+                                                         ctn.color_ntk.get_output_name(po_counter++) :
+                                                         fmt::format("po{}", po_counter++),
+                                                     ri_tile);
+                                }
+
+
                             }
                             layout.resize({latest_pos.x + 1 + (num_ris-1)*4, latest_pos.y-1 + (num_ris)*2, 1});
                             /***********************************************************End: Place Ris***************************************************************/
@@ -1744,7 +1799,7 @@ class orthogonal_new_impl
                             /**********************************************************Begin: Wire Registers***************************************************************/
                             std::cout << n << "latest pos "
                                       << "X:" << latest_pos.x << "Y:" << latest_pos.y << std::endl;
-                            ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, latest_pos.y + 2 + reg_number - repos}));
+                            ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, latest_pos.y + 2 + reg_number - repos + south_ri}));
 
                             std::cout << n << "repos "<<repos<<std::endl;
 
@@ -1871,7 +1926,6 @@ class orthogonal_new_impl
                             }
 
                             ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {static_cast<tile<Lyt>>(node2pos[ctn.color_ntk.ro_at(reg_number)]).x, ri_tile.y}));
-
                             //layout.resize({ri_tile.x , ri_tile.y, 1});
 
                             // auto current_ri = static_cast<mockturtle::signal<Ntk>>(n);

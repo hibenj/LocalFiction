@@ -150,6 +150,13 @@ class technology_dot_drawer : public mockturtle::gate_dot_drawer<Ntk>
                 return "DOT";
             }
         }
+        if constexpr (mockturtle::has_is_ro_v<Ntk>)
+        {
+            if (ntk.is_ro(n))
+            {
+                return "RO";
+            }
+        }
 
         const auto label = mockturtle::gate_dot_drawer<Ntk>::node_label(ntk, n);
 
@@ -325,20 +332,23 @@ class simple_gate_layout_tile_drawer : public technology_dot_drawer<Lyt, DrawInd
                     return "PI";
                 }
 
-                if (lyt.is_ro_tile(t))
-                {
-                    return "RO";
-                }
-
                 if (lyt.is_po_tile(t))
                 {
                     return "PO";
                 }
 
-                if (lyt.is_ri_tile(t))
-                {
-                    return "RI";
-                }
+            }
+        }
+        else if (lyt.is_ro_tile(t) || lyt.is_ri_tile(t))
+        {
+            if (lyt.is_ro_tile(t))
+            {
+                return "RO";
+            }
+
+            if (lyt.is_ri_tile(t))
+            {
+                return "RI";
             }
         }
 
@@ -961,7 +971,14 @@ void write_dot_layout(const Lyt& lyt, std::ostream& os, const Drawer& drawer = {
             if(lyt.is_ro(n))
             {
                 auto inc_tile = lyt.get_tile(n);
+
                 --inc_tile.x;
+
+                if(!lyt.is_buf(lyt.get_node(inc_tile)))
+                {
+                    ++inc_tile.x;
+                    ++inc_tile.y;
+                }
 
                 auto inc_node = lyt.get_node(inc_tile);
 

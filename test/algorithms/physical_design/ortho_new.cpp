@@ -38,7 +38,7 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::mux21_network<mockturtle::sequential<mockturtle::aig_network>>();
+    auto mux21 = blueprints::mux21_network<mockturtle::sequential<technology_network>>();
 
     mux21.set_network_name("mux21");
 
@@ -80,7 +80,7 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::seq_three<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::seq_one<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
@@ -120,7 +120,7 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::TEST_maj_three_buf<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::seq_two<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
@@ -143,7 +143,7 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::TEST_maj_two_plus_buf<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::TEST_maj_four_buf<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
     orthogonal_physical_design_stats stats{};
 
@@ -154,6 +154,17 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
     //print_gate_level_layout(std::cout, layout);
 
     fiction::debug::write_dot_layout(layout);
+
+    std::cout<<"clock number "<<layout.get_clock_number({6, 3, 0})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({7, 3, 0})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({7, 4, 0})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({7, 5, 0})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({7, 6, 0})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({6, 3, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({7, 3, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({7, 4, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({7, 5, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({7, 6, 1})<<std::endl;
 
 
     // network name
