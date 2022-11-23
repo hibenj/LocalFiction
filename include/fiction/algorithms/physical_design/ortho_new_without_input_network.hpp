@@ -1,10 +1,9 @@
 //
-// Created by Hien Benjamin on 24.05.2022.
+// Created by Hien Benjamin on 23.11.2022.
 //
 
-#ifndef FICTION_ORTHO_NEW_HPP
-#define FICTION_ORTHO_NEW_HPP
-
+#ifndef FICTION_ORTHO_NEW_WITHOUT_INPUT_NETWORK_HPP
+#define FICTION_ORTHO_NEW_WITHOUT_INPUT_NETWORK_HPP
 #include "fiction/algorithms/network_transformation/fanout_inverter_balancing.hpp"
 #include "fiction/algorithms/physical_design/orthogonal.hpp"
 #include "fiction/networks/sequential_technology_network.hpp"
@@ -20,744 +19,18 @@
 #include <mockturtle/utils/progress_bar.hpp>
 #endif
 
-int create_ten(){
-    int a = 10;
-    return a;
-};
-
 
 namespace fiction
 {
 namespace detail
 {
 
-/*This is needed for the delay network*/
-template <typename Lyt>
-mockturtle::signal<Lyt> wire_west(Lyt& lyt, const tile<Lyt>& src, const tile<Lyt>& dest)
-{
-    auto a = static_cast<mockturtle::signal<Lyt>>(src);
-
-    if(src.x - 1 == dest.x && dest.x == 0)
-    {
-        auto t = tile<Lyt>{dest.x, src.y, 0};
-        if (!lyt.is_empty_tile(t))  // crossing case
-        {
-            t = lyt.above(t);
-        }
-
-        a = lyt.create_buf(a, t);
-    }
-
-    for (auto x = src.x - 1; x > dest.x; --x)
-    {
-        auto t = tile<Lyt>{x, src.y, 0};
-        if (!lyt.is_empty_tile(t))  // crossing case
-        {
-            t = lyt.above(t);
-        }
-
-        a = lyt.create_buf(a, t);
-    }
-
-    return a;
-}
-/*This is needed for the delay network*/
-template <typename Lyt>
-mockturtle::signal<Lyt> wire_north(Lyt& lyt, const tile<Lyt>& src, const tile<Lyt>& dest)
-{
-    auto a = static_cast<mockturtle::signal<Lyt>>(src);
-
-    if(src.y - 1 == dest.y && dest.y == 0)
-    {
-        auto t = tile<Lyt>{src.x, dest.y, 0};
-        if (!lyt.is_empty_tile(t))  // crossing case
-        {
-            t = lyt.above(t);
-        }
-
-        a = lyt.create_buf(a, t);
-    }
-
-    for (auto y = src.y - 1; y > dest.y; --y)
-    {
-        auto t = tile<Lyt>{src.x, y, 0};
-        if (!lyt.is_empty_tile(t))  // crossing case
-        {
-            t = lyt.above(t);
-        }
-
-        a = lyt.create_buf(a, t);
-    }
-
-    return a;
-}
-
-
-
-template <typename Lyt>
-mockturtle::signal<Lyt> buffer_south_case_one(Lyt& layout, const tile<Lyt>& src, unsigned char pre_clock)
-{
-    auto pre1_t = static_cast<tile<Lyt>>(wire_east(layout, src, {src.x + 2, src.y}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    pre1_t = static_cast<tile<Lyt>>(wire_west(layout, pre1_t, {pre1_t.x - 2, pre1_t.y}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    pre1_t = static_cast<tile<Lyt>>(wire_west(layout, pre1_t, {pre1_t.x - 2, pre1_t.y}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-    /*pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);*/
-
-    return static_cast<mockturtle::signal<Lyt>>(pre1_t);
-}
-
-template <typename Lyt>
-mockturtle::signal<Lyt> buffer_south_case_two(Lyt& layout, const tile<Lyt>& src, unsigned char pre_clock)
-{
-    auto pre2_t = static_cast<tile<Lyt>>(wire_east(layout, src, {src.x + 2, src.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_west(layout, pre2_t, {pre2_t.x - 2, pre2_t.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_west(layout, pre2_t, {pre2_t.x - 2, pre2_t.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
-    /*layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});*/
-
-    return static_cast<mockturtle::signal<Lyt>>(pre2_t);
-}
-
-template <typename Lyt>
-mockturtle::signal<Lyt> buffer_east_case_one(Lyt& layout, const tile<Lyt>& src, unsigned char pre_clock)
-{
-    auto pre1_t = static_cast<tile<Lyt>>(wire_south(layout, src, {src.x, src.y + 2}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    if(pre1_t.y == 1)
-    {
-        pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y - 1}));
-        layout.assign_clock_number({pre1_t.x, pre1_t.y, 0}, pre_clock + 1);
-        pre_clock = layout.get_clock_number({pre1_t});
-    }
-    else
-    {
-        pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y - 2}));
-        layout.assign_clock_number({pre1_t.x, pre1_t.y, 0}, pre_clock + 1);
-        pre_clock = layout.get_clock_number({pre1_t});
-    }
-
-    pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, pre1_t.y + 2}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre1_t});
-
-    if(pre1_t.y == 1)
-    {
-        pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y - 1}));
-        layout.assign_clock_number({pre1_t.x, pre1_t.y, 0}, pre_clock + 1);
-        pre_clock = layout.get_clock_number({pre1_t});
-    }
-    else
-    {
-        pre1_t = static_cast<tile<Lyt>>(wire_north(layout, pre1_t, {pre1_t.x, pre1_t.y - 2}));
-        layout.assign_clock_number({pre1_t.x, pre1_t.y, 0}, pre_clock + 1);
-        pre_clock = layout.get_clock_number({pre1_t});
-    }
-
-    pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {pre1_t.x + 2, pre1_t.y}));
-    layout.assign_clock_number({pre1_t.x,pre1_t.y,0}, pre_clock+1);
-
-    return static_cast<mockturtle::signal<Lyt>>(pre1_t);
-}
-
-template <typename Lyt>
-mockturtle::signal<Lyt> buffer_east_case_two(Lyt& layout, const tile<Lyt>& src, unsigned char pre_clock)
-{
-    auto pre2_t = static_cast<tile<Lyt>>(wire_south(layout, src, {src.x, src.y + 2}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    if(pre2_t.y == 1)
-    {
-        pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 1}));
-        layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-        pre_clock = layout.get_clock_number({pre2_t});
-    }
-    else
-    {
-        pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 2}));
-        layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-        pre_clock = layout.get_clock_number({pre2_t});
-    }
-
-
-    pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, pre2_t.y + 2}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-    pre_clock = layout.get_clock_number({pre2_t});
-
-    if(pre2_t.y == 1)
-    {
-        pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 1}));
-        layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-        pre_clock = layout.get_clock_number({pre2_t});
-    }
-    else
-    {
-        pre2_t = static_cast<tile<Lyt>>(wire_north(layout, pre2_t, {pre2_t.x, pre2_t.y - 2}));
-        layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);
-        pre_clock = layout.get_clock_number({pre2_t});
-    }
-
-    /*pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {pre2_t.x + 2, pre2_t.y}));
-    layout.assign_clock_number({pre2_t.x,pre2_t.y,0}, pre_clock+1);*/
-
-    return static_cast<mockturtle::signal<Lyt>>(pre2_t);
-}
-
-
-
-
 template <typename Lyt, typename Ntk>
-mockturtle::signal<Lyt> connect_and_place(Lyt& lyt, const tile<Lyt>& t, const Ntk& ntk, const mockturtle::node<Ntk>& n,
-                                          tile<Lyt> pre1_t, tile<Lyt> pre2_t, tile<Lyt> pre3_t)
-{
-    //pre1_t is northern tile
-    //pre2_t is western tile
-    //pre3_t is eastern tile
-    if (pre2_t.y < pre1_t.y)
-        std::swap(pre1_t, pre2_t);
-    if (pre3_t.y < pre1_t.y)
-        std::swap(pre1_t, pre3_t);
-    if (pre3_t.x < pre2_t.x)
-        std::swap(pre2_t, pre3_t);
-
-    return place(lyt, t, ntk, n, wire_south(lyt, pre1_t, t), wire_east(lyt, pre2_t, t), wire_west(lyt, pre3_t, t));
-}
-
-/*This is needed for the conditional coloring*/
-template <typename Ntk>
-void paint_edge_if(const coloring_container<Ntk>& ctn,const mockturtle::edge<out_of_place_edge_color_view<Ntk>>& e, uint32_t clr)
-{
-    if (ctn.color_ntk.edge_color(e) != ctn.color_null)
-    {
-        return;
-    }
-    ctn.color_ntk.paint_edge(e, clr);
-}
-/*This is needed for the conditional coloring*/
-template <typename Ntk>
-void paint_if( const coloring_container<Ntk>& ctn, mockturtle::node<Ntk> const& n, uint32_t color )
-{
-    if (ctn.color_ntk.color(n) != ctn.color_null)
-    {
-        return;
-    }
-    ctn.color_ntk.paint(mockturtle::node<Ntk>{n}, color);
-}
-/*This is needed for the conditional coloring*/
-template <typename Ntk>
-void recursevly_paint_fan_outs( const coloring_container<Ntk>& ctn, mockturtle::node<Ntk> const& n)
-{
-    if (ctn.color_ntk.color(n) != ctn.color_null)
-    {
-        return;
-    }
-    auto color = ctn.color_east;
-    if(ctn.color_ntk.is_fanout(n)){
-        paint_if(ctn, n, color);
-    }
-    ctn.color_ntk.foreach_fanout(n, [&](const auto& nd){
-                                     if(ctn.color_ntk.is_fanout(n))
-                                     {
-                                         recursevly_paint_fan_outs(ctn, n);
-                                     }});
-
-}
-/*Conditional coloring*/
-template <typename Ntk>
-coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
-{
-    coloring_container<Ntk> ctn{ntk};
-    reverse_view            rtv{ntk};  // reverse order of nodes
-
-    /*Coloring for Input Network*/
-    bool fo_node = false;
-    bool node_pi = false;
-    bool node_fo = false;
-    bool inv_flag = false;
-
-    std::vector<typename Ntk::node> new_output_node;
-
-    //Paint majority gates east
-    /**NEW CODE MAJORITY GATES**/
-    /*rtv.foreach_gate([&](const auto& nd){
-
-        if(ntk.is_maj(nd))
-        {
-            auto color = ctn.color_east;
-            const auto finc_fo = fanin_edges(ctn.color_ntk, nd);
-            std::for_each(finc_fo.fanin_edges.cbegin(), finc_fo.fanin_edges.cend(),
-                          [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-            paint_if(ctn, nd, color);
-
-            ntk.foreach_fanout(nd, [&ntk, &nd, &ctn](const auto& fon)
-                               {
-                                   auto color = ctn.color_east;
-                                   const auto finc_fo = fanin_edges(ctn.color_ntk, fon);
-                                   std::for_each(finc_fo.fanin_edges.cbegin(), finc_fo.fanin_edges.cend(),
-                                                 [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                   paint_if(ctn, fon, color);
-                               });
-        }
-    });*/
-
-
-    ntk.foreach_ci(
-        [&](const auto& nd){
-            ntk.foreach_fanout(
-                nd,
-                [&](const auto& fon)
-                {
-                    fo_node = false;
-                    node_pi = false;
-                    node_fo = false;
-                    inv_flag = false;
-                    /*Ignore Inverters*/
-                    new_output_node.clear();
-                    new_output_node.push_back(fon);
-                    if (ntk.is_inv(fon))
-                    {
-                        ntk.foreach_fanout(fon,
-                                           [&](const auto& fon_inv) {
-                                               new_output_node[0] = fon_inv;
-
-                                               /*COLOR INVERTER EAST*/
-                                               auto color = ctn.color_east;
-                                               const auto finc = fanin_edges(ctn.color_ntk, fon);
-                                               std::for_each(finc.fanin_edges.cbegin(), finc.fanin_edges.cend(),
-                                                             [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                           });
-                    }
-                    if (ntk.is_fanout(new_output_node[0])){
-                        mockturtle::node<Ntk> safe_node = new_output_node[0];
-                        fo_node = true;
-
-                        /*COLOR FAN-OUT EAST*/
-                        auto color = ctn.color_east;
-                        const auto finc = fanin_edges(ctn.color_ntk, new_output_node[0]);
-                        std::for_each(finc.fanin_edges.cbegin(), finc.fanin_edges.cend(),
-                                      [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-
-                        new_output_node.clear();
-                        ntk.foreach_fanout(safe_node,
-                                           [&](const auto& fon) {
-                                               if (ntk.is_inv(fon))
-                                               {
-                                                   inv_flag = true;
-                                                   /*Inverter Flag*/
-                                                   ntk.foreach_fanout(fon,
-                                                                      [&](const auto& fon_inv) {new_output_node.insert(new_output_node.begin(), fon_inv);});
-                                               }
-                                               else
-                                                   /*COLOR NODE SOUTH AND COLOR THE INCOMING EDGES OF THIS NODE ALSO SOUTH*/
-                                                   new_output_node.push_back(fon);
-                                               /*COLOR THE OTHER OUTGOING EDGE OF THE FAN-OUT EAST*/
-                                               /*IF the node is an inverter color next edge also east*/
-                                           });
-                    }
-
-                    /*The Fan-out has to be connected to 1.Fan-out nodes of Inputs or 2.Inputs*/
-                    /*Has to be rewritten for Inputs with Fan-outs higher than two*/
-                    bool already_painted = false;
-                    bool all_inputs = false;
-
-                    for(int i = 0; i <new_output_node.size(); ++i)
-                    {
-
-                        if(ntk.is_maj(new_output_node[i]))
-                        {
-                            auto color = ctn.color_east;
-                            const auto finc_fo = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                            std::for_each(finc_fo.fanin_edges.cbegin(), finc_fo.fanin_edges.cend(),
-                                          [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                            paint_if(ctn, new_output_node[i], color);
-
-                            if(new_output_node.size()>1)
-                            {
-                                i = 1 - i;
-
-                                //Color other fan-out south
-                                color = ctn.color_south;
-                                const auto finc_other = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                std::for_each(finc_other.fanin_edges.cbegin(), finc_other.fanin_edges.cend(),
-                                              [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                paint_if(ctn, new_output_node[i], color);
-                            }
-
-                        }
-                    }
-
-                    for(int i = 0; i <new_output_node.size(); ++i)
-                    {
-
-                        /*if(ntk.is_maj(new_output_node[i]))
-                        {
-                            auto color = ctn.color_east;
-                            const auto finc_fo = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                            std::for_each(finc_fo.fanin_edges.cbegin(), finc_fo.fanin_edges.cend(),
-                                          [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                            paint_if(ctn, new_output_node[i], color);
-                        }*/
-
-                        ntk.foreach_fanin(
-                            new_output_node[i],
-                            [&](const auto& fi)
-                            {
-                                auto fin_inp = ntk.get_node(fi);
-                                /*Ignore Inverters*/
-                                if (ntk.is_inv(fin_inp))
-                                {
-                                    auto color = ctn.color_east;
-                                    const auto fin_inv = fanin_edges(ctn.color_ntk, fin_inp);
-                                    std::for_each(fin_inv.fanin_edges.cbegin(), fin_inv.fanin_edges.cend(),
-                                                  [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                    paint_if(ctn, fin_inp, color);
-                                    const auto fis_inv = fanins(ntk, fin_inp);
-                                    fin_inp            = fis_inv.fanin_nodes[0];
-                                }
-                                /*1*/
-                                if (ntk.fanout_size(fin_inp) >= 2)
-                                {
-                                    ntk.foreach_fanin(
-                                        fin_inp,
-                                        [&](const auto& fin)
-                                        {
-                                            auto fin_inp_sec = ntk.get_node(fin);
-                                            /*Ignore Inverters*/
-                                            if (ntk.is_inv(fin_inp_sec))
-                                            {
-                                                const auto fis_inv = fanins(ntk, fin_inp_sec);
-                                                fin_inp_sec        = fis_inv.fanin_nodes[0];
-                                            }
-                                            if (ntk.is_ci(fin_inp_sec) == true &&
-                                                fin_inp_sec != nd)
-                                            {
-                                                if(fo_node && !already_painted){
-                                                    if (inv_flag)
-                                                    {
-                                                        auto color = ctn.color_south;
-                                                        const auto finc_fo = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                                        std::for_each(finc_fo.fanin_edges.cbegin(), finc_fo.fanin_edges.cend(),
-                                                                      [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                                        paint_if(ctn, new_output_node[i], color);
-
-                                                        i = 1 - i;
-
-                                                        /*Color other fan-out south*/
-                                                        color = ctn.color_south;
-                                                        const auto finc_other = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                                        std::for_each(finc_other.fanin_edges.cbegin(), finc_other.fanin_edges.cend(),
-                                                                      [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                                        paint_if(ctn, new_output_node[i], color);
-
-                                                        already_painted = true;
-                                                    }
-                                                    else
-                                                    {
-                                                        /*Color first fan-out node east*/
-                                                        auto color = ctn.color_east;
-                                                        const auto finc_fo = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                                        std::for_each(finc_fo.fanin_edges.cbegin(), finc_fo.fanin_edges.cend(),
-                                                                      [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                                        paint_if(ctn, new_output_node[i], color);
-
-                                                        i = 1 - i;
-
-                                                        /*Color other fan-out south*/
-                                                        color = ctn.color_south;
-                                                        const auto finc_other = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                                        std::for_each(finc_other.fanin_edges.cbegin(), finc_other.fanin_edges.cend(),
-                                                                      [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                                        paint_if(ctn, new_output_node[i], color);
-
-                                                        already_painted = true;
-                                                    }
-
-                                                }
-                                                /*else if(!already_painted){
-                                                    auto color = ctn.color_south;
-                                                    const auto finc_other = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                                    std::for_each(finc_other.fanin_edges.cbegin(), finc_other.fanin_edges.cend(),
-                                                                  [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                                    ctn.color_ntk.paint(mockturtle::node<Ntk>{new_output_node[i]}, color);
-
-                                                    already_painted = true;
-                                                }*/
-                                                node_fo = true;
-                                                all_inputs = true;
-                                            }
-                                        });
-                                }
-                                /*2*/
-                                else if (ntk.is_ci(fin_inp) == true && fin_inp != nd)
-                                {
-                                    if(fo_node)
-                                    {
-                                        if (!already_painted)
-                                        {
-                                            if (inv_flag)
-                                            {
-                                                /*Color first fan-out node south*/
-                                                auto       color    = ctn.color_south;
-                                                const auto finc_inv = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                                std::for_each(finc_inv.fanin_edges.cbegin(),
-                                                              finc_inv.fanin_edges.cend(),
-                                                              [&ctn, &color](const auto& fe)
-                                                              { paint_edge_if(ctn, fe, color); });
-                                                paint_if(ctn, new_output_node[i], color);
-
-                                                /*Color other fan-out south*/
-                                                color                  = ctn.color_south;
-                                                const auto finc_no_inv = fanin_edges(ctn.color_ntk, new_output_node[i + 1]);
-                                                std::for_each(finc_no_inv.fanin_edges.cbegin(),
-                                                              finc_no_inv.fanin_edges.cend(),
-                                                              [&ctn, &color](const auto& fe)
-                                                              { paint_edge_if(ctn, fe, color); });
-                                                paint_if(ctn, new_output_node[i+1], color);
-                                            }
-                                            else
-                                            {
-                                                /*Color first fan-out node south*/
-                                                auto       color           = ctn.color_south;
-                                                const auto finc_no_inv_one = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                                std::for_each(finc_no_inv_one.fanin_edges.cbegin(),
-                                                              finc_no_inv_one.fanin_edges.cend(),
-                                                              [&ctn, &color](const auto& fe)
-                                                              { paint_edge_if(ctn, fe, color); });
-                                                paint_if(ctn, new_output_node[i], color);
-
-                                                i = 1 - i;
-
-                                                /*Color other fan-out east*/
-                                                color = ctn.color_east;
-                                                const auto finc_no_inv_two =
-                                                    fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                                std::for_each(finc_no_inv_two.fanin_edges.cbegin(),
-                                                              finc_no_inv_two.fanin_edges.cend(),
-                                                              [&ctn, &color](const auto& fe)
-                                                              { paint_edge_if(ctn, fe, color); });
-                                                paint_if(ctn, new_output_node[i], color);
-                                            }
-                                            already_painted = true;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        auto color = ctn.color_east;
-                                        const auto finc_only_pis = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                        std::for_each(finc_only_pis.fanin_edges.cbegin(), finc_only_pis.fanin_edges.cend(),
-                                                      [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                        paint_if(ctn, new_output_node[i], color);
-                                    }
-                                    node_pi = true;
-                                    all_inputs = true;
-                                }
-                                else if (ntk.is_maj(fin_inp))
-                                {
-                                    auto color = ctn.color_east;
-                                    const auto finc_only_pis = fanin_edges(ctn.color_ntk, new_output_node[i]);
-                                    std::for_each(finc_only_pis.fanin_edges.cbegin(), finc_only_pis.fanin_edges.cend(),
-                                                  [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                    paint_if(ctn, new_output_node[i], color);
-                                }
-
-
-                            });
-                    }
-                });
-        });
-
-    ntk.foreach_ci(
-    [&](const auto& nd) {
-        ntk.foreach_fanout(nd,
-                               [&](const auto& fon) {
-                                   auto color = ctn.color_east;
-                                   const auto fo_edges = fanin_edges(ctn.color_ntk, fon);
-                                   std::for_each(fo_edges.fanin_edges.cbegin(), fo_edges.fanin_edges.cend(),
-                                                 [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
-                                   paint_if(ctn, fon, color);
-                               });
-
-        });
-
-#if (PROGRESS_BARS)
-    // initialize a progress bar
-    mockturtle::progress_bar bar{static_cast<uint32_t>(ctn.color_ntk.num_gates()),
-                                 "[i] determining relative positions: |{0}|"};
-#endif
-
-
-    rtv.foreach_gate(
-        [&](const auto& n, [[maybe_unused]] const auto i)
-        {
-            const auto finc = fanin_edges(ctn.color_ntk, n);
-
-            // if any incoming edge is colored east, color them all east, and south otherwise
-            const auto color =
-                std::any_of(finc.fanin_edges.cbegin(), finc.fanin_edges.cend(),
-                            [&ctn](const auto& fe) { return ctn.color_ntk.edge_color(fe) == ctn.color_east; }) ?
-                    ctn.color_east :
-                    ctn.color_south;
-
-            std::for_each(finc.fanin_edges.cbegin(), finc.fanin_edges.cend(),
-                          [&ctn, &color](const auto& fe) { recursively_paint_edges(ctn, fe, color); });
-
-            // if all incoming edges are colored east, paint the node east as well
-            if (std::all_of(finc.fanin_edges.cbegin(), finc.fanin_edges.cend(),
-                            [&ctn](const auto& fe) { return ctn.color_ntk.edge_color(fe) == ctn.color_east; }))
-            {
-                ctn.color_ntk.paint(mockturtle::node<Ntk>{n}, ctn.color_east);
-            }
-            // else, if all incoming edges are colored south, paint the node south as well
-            else if (std::all_of(finc.fanin_edges.cbegin(), finc.fanin_edges.cend(),
-                                 [&ctn](const auto& fe) { return ctn.color_ntk.edge_color(fe) == ctn.color_south; }))
-            {
-                ctn.color_ntk.paint(mockturtle::node<Ntk>{n}, ctn.color_south);
-            }
-
-#if (PROGRESS_BARS)
-            // update progress
-            bar(i);
-#endif
-        });
-
-    return ctn;
-}
-
-/*Check edges, which have to be buffered according to the delays resulting from majority gates*/
-template <typename Ntk>
-std::vector<int> majority_buffer(const Ntk& ntk, mockturtle::node<Ntk> n) noexcept
-{
-    std::vector<mockturtle::node<Ntk>> delay_nodes;
-
-    int size{0};
-    int iterator{0};
-    const auto fc = fanins(ntk, n);
-    size = fc.fanin_nodes.size();
-
-    std::vector<int>                         delays(size);
-    //std::vector<mockturtle::node<Ntk>> incoming_path_node(size);
-    if(size != 0){
-
-        foreach_incoming_edge(ntk, n,
-                              [&](const auto& e)
-                              {
-                                  if(!ntk.is_constant(e.source))
-                                  {
-                                      auto node_paths = all_incoming_edge_paths(ntk, e.source);
-                                      // incoming_path_node[iterator] = e.source;
-
-                                      for (int i = 0; i < node_paths.size(); ++i)
-                                      {
-                                          int path_delay = 0;
-                                          for (int j = 0; j < node_paths[i].size(); ++j)
-                                          {
-                                              if (const auto ft = fanins(ntk, node_paths[i][j].target); ntk.is_maj(node_paths[i][j].target) && ft.fanin_nodes.size()>2)
-                                              {
-                                                  ++path_delay;
-                                              }
-                                          }
-                                          if (delays[iterator] < path_delay)
-                                          {
-                                              delays[iterator] = path_delay;
-                                          }
-                                      }
-                                      ++iterator;
-                                  }
-                              });
-
-        int max = *std::max_element(delays.begin(), delays.end());
-        for(int k=0; k<delays.size(); ++k)
-        {
-            delays[k] = max - delays[k];
-        }
-    }
-
-    return delays;
-}
-
-
-template <typename Lyt, typename Ntk>
-class orthogonal_new_impl
+class orthogonal_new_without_in_impl
 {
   public:
-    orthogonal_new_impl(const Ntk& src, const orthogonal_physical_design_params& p, orthogonal_physical_design_stats& st) :
-            ntk{topo_view_input_sort{mockturtle::fanout_view{inverter_balancing(fanout_substitution<mockturtle::names_view<mockturtle::sequential<technology_network>>>(src))}}},
+    orthogonal_new_without_in_impl(const Ntk& src, const orthogonal_physical_design_params& p, orthogonal_physical_design_stats& st) :
+            ntk{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<mockturtle::sequential<technology_network>>>(src)}},
             ps{p},
             pst{st}
     {}
@@ -767,7 +40,7 @@ class orthogonal_new_impl
         // measure run time
         mockturtle::stopwatch stop{pst.time_total};
         // compute a coloring
-        const auto ctn = new_east_south_edge_coloring(ntk);
+        const auto ctn = east_south_edge_coloring(ntk);
 
         mockturtle::node_map<mockturtle::signal<Lyt>, decltype(ctn.color_ntk)> node2pos{ctn.color_ntk};
 
@@ -869,15 +142,26 @@ class orthogonal_new_impl
                     // if node is a PI, move it to its correct position
                     else if (ctn.color_ntk.is_pi(n))
                     {
-                        /**NEW CODE
-                         * !!new latest_pos for inputs
-                         * **/
-                        /*Placing Inputs in first Column*/
-                        node2pos[n] = layout.move_node(pi2node[n], {latest_pos_inputs});
-                        std::cout<<n<<"Pi plaziert auf "<<"X:"<<latest_pos_inputs.x<<"Y:"<<latest_pos_inputs.y<<std::endl;
+                        node2pos[n] = layout.move_node(pi2node[n], {0, latest_pos.y});
 
-                        //++latest_pos.y;
-                        ++latest_pos_inputs.y;
+                        // resolve conflicting PIs
+                        ctn.color_ntk.foreach_fanout(
+                            n,
+                            [&ctn, &n, &layout, &node2pos, &latest_pos](const auto& fon)
+                            {
+                                if (ctn.color_ntk.color(fon) == ctn.color_south)
+                                {
+                                    node2pos[n] =
+                                        layout.create_buf(wire_east(layout, {0, latest_pos.y}, latest_pos), latest_pos);
+                                    ++latest_pos.x;
+                                }
+
+                                // PIs have only one fanout
+                                return false;
+                            });
+
+                        ++latest_pos.y;
+
                     }
                     /**NEW CODE
                      * MAJORITY GATES PLACEMENT
@@ -1331,7 +615,7 @@ class orthogonal_new_impl
                         {
 
                             if(std::all_of(fos.cbegin(), fos.cend(),
-                                        [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }))
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }))
                             {
                                 //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
                                 ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_east);
@@ -1697,20 +981,19 @@ class orthogonal_new_impl
             if (!ctn.color_ntk.is_combinational())
             {
                 ctn.color_ntk.foreach_ri(
-            [&](const auto& n)
-            {
-                if (ctn.color_ntk.is_ri(n))
-                {
-                    auto n_s = node2pos[n];
-                    tile<Lyt> ri_tile{};
-                    if (!is_eastern_po_orientation_available(ctn, n) && !ctn.color_ntk.is_po(n))
+                    [&](const auto& n)
                     {
-                        tile<Lyt> ri_tile_s = layout.south(static_cast<tile<Lyt>>(n_s));
-                        ri_tile ={ri_tile_s.x, latest_pos.y};
-                        south_ri = ri_tile.y - ri_tile_s.y;
-                        //south_ri =0;
-                    }
-                    }});
+                        if (ctn.color_ntk.is_ri(n))
+                        {
+                            auto n_s = node2pos[n];
+                            tile<Lyt> ri_tile{};
+                            if (!is_eastern_po_orientation_available(ctn, n) && !ctn.color_ntk.is_po(n))
+                            {
+                                tile<Lyt> ri_tile_s = layout.south(static_cast<tile<Lyt>>(n_s));
+                                ri_tile ={ri_tile_s.x, latest_pos.y};
+                                south_ri = ri_tile.y - ri_tile_s.y;
+                            }
+                        }});
 
                 ctn.color_ntk.foreach_ri(
                     [&](const auto& n)
@@ -1723,8 +1006,6 @@ class orthogonal_new_impl
                         {
                             auto n_s = node2pos[n];
 
-                            tile<Lyt> original_ri_position = static_cast<tile<Lyt>>(n_s);
-
                             tile<Lyt> ri_tile{};
 
                             // determine PO orientation
@@ -1734,7 +1015,7 @@ class orthogonal_new_impl
                             if (is_eastern_po_orientation_available(ctn, n) && !ctn.color_ntk.is_po(n))
                             {
                                 layout.resize({latest_pos.x + reg_number - 1, latest_pos.y - 1, 1});
-                                ri_tile = static_cast<tile<Lyt>>(n_s);
+                                ri_tile = layout.east(static_cast<tile<Lyt>>(n_s));
                             }
                             else
                             {
@@ -1750,8 +1031,8 @@ class orthogonal_new_impl
                             {
                                 std::cout<<n<<"Ri_tile coordinates"<<"X:"<<ri_tile.x<<"Y:"<<ri_tile.y<<std::endl;
                                 auto safe_ri_tile = ri_tile;
-                                ri_tile ={ri_tile.x, original_ri_position.y};
-                                ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, safe_ri_tile.y + 1}));
+                                ri_tile ={ri_tile.x, ri_tile.y-2};
+                                ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, ri_tile.y+3}));
                                 ri_tile = safe_ri_tile;
                             }
                             /*if(ctn.color_ntk.is_maj(n))
@@ -1773,8 +1054,8 @@ class orthogonal_new_impl
                             // place PO at the border and connect it by wire segments
                             else
                             {
-                                /*if(south_ri_b)
-                                {*/
+                                if(south_ri_b)
+                                {
                                     const tile<Lyt> anker = {ri_tile.x, ri_tile.y};
                                     ri_tile = layout.eastern_border_of(ri_tile);
                                     layout.create_ri(wire_east(layout, anker, ri_tile),
@@ -1782,7 +1063,7 @@ class orthogonal_new_impl
                                                          ctn.color_ntk.get_output_name(po_counter++) :
                                                          fmt::format("po{}", po_counter++),
                                                      ri_tile);
-                                /*}else
+                                }else
                                 {
                                     const auto anker = layout.create_buf(n_s, {ri_tile.x, ri_tile.y});
 
@@ -1793,7 +1074,7 @@ class orthogonal_new_impl
                                                          ctn.color_ntk.get_output_name(po_counter++) :
                                                          fmt::format("po{}", po_counter++),
                                                      ri_tile);
-                                }*/
+                                }
 
 
                             }
@@ -1819,7 +1100,6 @@ class orthogonal_new_impl
                                     --wire_to_ri_tile.x;
                                     --wire_to_ri_tile.y;
                                 }
-                                layout.resize({ri_tile.x, ri_tile.y, 1});
 
                                 auto pre_clock = layout.get_clock_number({ri_tile});
                                 if(wire_to_ri_tile.x < 1)
@@ -1869,12 +1149,10 @@ class orthogonal_new_impl
                             //general solution for N registers
                             ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {latest_pos.x + num_ris + reg_number*4, ri_tile.y}));
 
-
                             //wire south to latest_pos.y + num_ris
                             auto pre_clock = layout.get_clock_number({ri_tile});
                             tile<Lyt> wire_to_ri_tile{ri_tile.x, ri_tile.y + (num_ris-1-reg_number)*2 + 2};
                             ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, wire_to_ri_tile));
-                            layout.resize({ri_tile.x, ri_tile.y+1 +south_ri, 1});
                             pre_clock = layout.get_clock_number({ri_tile});
                             //layout.resize({latest_pos.x +(reg_number)*4, latest_pos.y + num_ris-1, 1});
 
@@ -1935,6 +1213,7 @@ class orthogonal_new_impl
                             }
 
                             ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {static_cast<tile<Lyt>>(node2pos[ctn.color_ntk.ro_at(reg_number)]).x, ri_tile.y}));
+                            //layout.resize({ri_tile.x , ri_tile.y, 1});
 
                             // auto current_ri = static_cast<mockturtle::signal<Ntk>>(n);
                         }
@@ -1942,7 +1221,7 @@ class orthogonal_new_impl
 
                     });
             }
-            //layout.resize({30 , 20, 1});
+            //layout.resize({22 , 14, 1});
             //++latest_pos.x;
         }
 
@@ -2002,8 +1281,8 @@ class orthogonal_new_impl
 
 
 template <typename Lyt, typename Ntk>
-Lyt orthogonal_new(const Ntk& ntk, orthogonal_physical_design_params ps = {},
-               orthogonal_physical_design_stats* pst = nullptr)
+Lyt orthogonal_new_without_in(const Ntk& ntk, orthogonal_physical_design_params ps = {},
+                   orthogonal_physical_design_stats* pst = nullptr)
 {
     static_assert(is_gate_level_layout_v<Lyt>, "Lyt is not a gate-level layout");
     static_assert(mockturtle::is_network_type_v<Ntk>,
@@ -2017,7 +1296,7 @@ Lyt orthogonal_new(const Ntk& ntk, orthogonal_physical_design_params ps = {},
     }
 
     orthogonal_physical_design_stats  st{};
-    detail::orthogonal_new_impl<Lyt, Ntk> p{ntk, ps, st};
+    detail::orthogonal_new_without_in_impl<Lyt, Ntk> p{ntk, ps, st};
 
     auto result = p.run();
 
@@ -2030,5 +1309,4 @@ Lyt orthogonal_new(const Ntk& ntk, orthogonal_physical_design_params ps = {},
 }
 
 }  // namespace fiction
-
-#endif  // FICTION_ORTHO_NEW_HPP
+#endif  // FICTION_ORTHO_NEW_WITHOUT_INPUT_NETWORK_HPP

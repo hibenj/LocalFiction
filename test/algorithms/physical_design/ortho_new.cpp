@@ -11,6 +11,7 @@
 
 #include <fiction/algorithms/physical_design/apply_gate_library.hpp>
 #include <fiction/algorithms/physical_design/ortho_new.hpp>
+#include <fiction/algorithms/physical_design/ortho_new_without_input_network.hpp>
 #include <fiction/algorithms/verification/design_rule_violations.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>
 #include <fiction/layouts/cell_level_layout.hpp>
@@ -120,7 +121,7 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::seq_two<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::seq_four<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
@@ -143,7 +144,7 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::TEST_maj_four_buf<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::seq_two_z<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
     orthogonal_physical_design_stats stats{};
 

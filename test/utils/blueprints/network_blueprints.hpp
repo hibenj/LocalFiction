@@ -801,6 +801,51 @@ Ntk onebitAdderAOIG()
 }
 
 template <typename Ntk>
+Ntk onebitAdderMajority()
+{
+    Ntk ntk{};
+    const auto a    = ntk.create_pi("a");
+    const auto b    = ntk.create_pi("b");
+    const auto cin    = ntk.create_pi("c");
+    const auto n_cin    = ntk.create_not(cin);
+
+    const auto m11 = ntk.create_and(a, b);
+    const auto m12 = ntk.create_and(a, cin);
+    const auto m13 = ntk.create_and(b, cin);
+    const auto m14 = ntk.create_or(m11, m12);
+    const auto m1 = ntk.create_or(m13, m14);
+    const auto n_m1 = ntk.create_not(m1);
+    const auto m21 = ntk.create_and(n_m1, a);
+    const auto m22 = ntk.create_and(n_m1, b);
+    const auto m23 = ntk.create_or(m21, m22);
+    const auto m2 = ntk.create_or(m23, m11);
+    const auto m31 = ntk.create_and(n_cin, m2);
+    const auto m32 = ntk.create_and(n_cin, m1);
+    const auto m33 = ntk.create_and(m2, m1);
+    const auto m34 = ntk.create_or(m31, m32);
+    const auto m3 = ntk.create_or(m33, m34);
+    ntk.create_po(m3, "f");
+
+    /*assign M11 = A & B;
+    assign M12 = A & Cin;
+    assign M13 = B & Cin;
+    assign M14 = M11 | M12;
+    assign M1 = M13 | M14;
+    assign M21 = ~M1 & A;
+    assign M22 = ~M1 & B;
+    assign M23 = M21 | M22;
+    assign M2 = M23 | M11;
+    assign M31 = ~Cin & M2;
+    assign M32 = ~Cin & M1;
+    assign M33 = M2 & M1;
+    assign M34 = M31 | M32;
+    assign M3 = M33 | M34;*/
+
+    return ntk;
+}
+
+
+template <typename Ntk>
 Ntk FA()
 {
     Ntk ntk{};
@@ -910,6 +955,40 @@ mockturtle::names_view<Ntk> seq_three()
     ntk.create_ri(xo1);
     ntk.create_ri(a1);
     ntk.create_ri(a2);
+
+
+
+    return ntk;
+}
+
+template <typename Ntk>
+mockturtle::names_view<Ntk> seq_four()
+{
+    mockturtle::names_view<Ntk> ntk{};
+
+    const auto x1 = ntk.create_pi("a");
+
+    const auto r1_o = ntk.create_ro();
+
+    const auto r2_o = ntk.create_ro();
+
+    const auto r3_o = ntk.create_ro();
+
+    const auto r4_o = ntk.create_ro();
+
+    const auto xo1 = ntk.create_xor(x1, r1_o);
+
+    const auto a1 = ntk.create_and(x1, r2_o);
+
+    const auto a2 = ntk.create_and(a1, r3_o);
+
+    const auto a3 = ntk.create_and(r4_o, a2);
+
+    ntk.create_po(a2, "cout");
+    ntk.create_ri(xo1);
+    ntk.create_ri(a1);
+    ntk.create_ri(a2);
+    ntk.create_ri(a3);
 
 
 
