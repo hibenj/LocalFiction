@@ -1629,7 +1629,16 @@ class orthogonal_new_impl
                             ++latest_pos.x;
                             if (num_ris>1){
                                 //latest_pos.x = latest_pos.x + register_offset + (num_ris-1)*4;
-                                layout.resize({latest_pos.x - 1 + register_offset + (num_ris-1)*5, latest_pos.y-1, 1});
+                                int g_syc_const{0};
+                                ctn.color_ntk.foreach_ri(
+                                    [&](const auto& n){
+                                        auto ro_position = node2pos[ctn.color_ntk.ri_to_ro(n)];
+                                        tile<Lyt> ri_tile_ro_pos = static_cast<tile<Lyt>>(ro_position);
+                                        auto g_sync = floor((ri_tile_ro_pos.y)/4);
+                                        if(g_sync > g_syc_const)
+                                            g_syc_const=g_sync;
+                                    });
+                                layout.resize({latest_pos.x - 1 + register_offset + (num_ris-1)*5 + g_syc_const*2, latest_pos.y-1, 1});
                             }else
                                 layout.resize({latest_pos.x-1, latest_pos.y-1, 1});
                             po_tile = layout.east(static_cast<tile<Lyt>>(n_s));
@@ -1867,7 +1876,12 @@ class orthogonal_new_impl
                             }
 
                             //general solution for N registers
-                            ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {latest_pos.x + num_ris + reg_number*4, ri_tile.y}));
+                            auto ro_position = node2pos[ctn.color_ntk.ri_to_ro(n)];
+                            tile<Lyt> ri_tile_ro_pos = static_cast<tile<Lyt>>(ro_position);
+                            /*std::cout<<"reg_number"<<reg_number<<std::endl;
+                            std::cout<<"ro_pos"<<floor((ri_tile_ro_pos.y)/4)<<std::endl;*/
+                            auto g_syc_const = floor((ri_tile_ro_pos.y)/4);
+                            ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {latest_pos.x + num_ris + reg_number*4 + g_syc_const*2, ri_tile.y}));
 
 
                             //wire south to latest_pos.y + num_ris

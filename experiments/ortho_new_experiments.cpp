@@ -6,6 +6,8 @@
 #include "fiction/algorithms/physical_design/ortho_new.hpp"
 //#include "fiction/algorithms/physical_design/orthogonal.hpp"
 #include "../test/utils/blueprints/network_blueprints.hpp"
+//#include "lorina/blif.hpp"
+#include "mockturtle/io/blif_reader.hpp"
 #include "mockturtle/io/verilog_reader.hpp"
 
 #include <iostream>
@@ -92,6 +94,16 @@ int main()
 
         mockturtle::aig_network aig;
         fiction::technology_network tech;
+        fiction::technology_network tech_two;
+        mockturtle::klut_network klut;
+
+        //const auto read_blif_result = lorina::read_blif( "b01.blif", mockturtle::blif_reader( tech_two ) );
+        //assert(read_blif_result == lorina::return_code::success);
+        tech_two.foreach_node(
+            [&](const auto& n)
+            {
+                std::cout<<"ONode "<<n<<std::endl;
+            });
 
         const auto read_verilog_result_aig =
             lorina::read_verilog(fiction_experiments::benchmark_path(benchmark), mockturtle::verilog_reader(aig));
