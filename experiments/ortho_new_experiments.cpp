@@ -97,7 +97,7 @@ int main()
         fiction::technology_network tech_two;
         mockturtle::klut_network klut;
 
-        //const auto read_blif_result = lorina::read_blif( "b01.blif", mockturtle::blif_reader( tech_two ) );
+        //const auto read_blif_result = lorina::read_blif( fmt::format("{}/{}", EXPERIMENTS_PATH, "b01.blif"), mockturtle::blif_reader( tech_two ) );
         //assert(read_blif_result == lorina::return_code::success);
         tech_two.foreach_node(
             [&](const auto& n)

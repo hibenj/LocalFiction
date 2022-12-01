@@ -1640,7 +1640,7 @@ class orthogonal_new_impl
                                     });
                                 layout.resize({latest_pos.x - 1 + register_offset + (num_ris-1)*5 + g_syc_const*2, latest_pos.y-1, 1});
                             }else
-                                layout.resize({latest_pos.x-1, latest_pos.y-1, 1});
+                                layout.resize({latest_pos.x-1, latest_pos.y-2, 1});
                             po_tile = layout.east(static_cast<tile<Lyt>>(n_s));
                         }
                         else

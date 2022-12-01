@@ -135,24 +135,14 @@ class orthogonal_new_without_in_impl
                         node2pos[n] = layout.move_node(ro2node[n], {latest_pos_inputs});
                         std::cout<<n<<"Ro (als Pi) plaziert auf "<<"X:"<<latest_pos_inputs.x<<"Y:"<<latest_pos_inputs.y<<std::endl;
 
-                        //++latest_pos.y;
-                        ++latest_pos_inputs.y;
-                    }
-
-                    // if node is a PI, move it to its correct position
-                    else if (ctn.color_ntk.is_pi(n))
-                    {
-                        node2pos[n] = layout.move_node(pi2node[n], {0, latest_pos.y});
-
-                        // resolve conflicting PIs
                         ctn.color_ntk.foreach_fanout(
                             n,
-                            [&ctn, &n, &layout, &node2pos, &latest_pos](const auto& fon)
+                            [&ctn, &n, &layout, &node2pos, &latest_pos, &latest_pos_inputs](const auto& fon)
                             {
                                 if (ctn.color_ntk.color(fon) == ctn.color_south)
                                 {
                                     node2pos[n] =
-                                        layout.create_buf(wire_east(layout, {0, latest_pos.y}, latest_pos), latest_pos);
+                                        layout.create_buf(wire_east(layout, {latest_pos_inputs}, latest_pos), latest_pos);
                                     ++latest_pos.x;
                                 }
 
@@ -160,8 +150,34 @@ class orthogonal_new_without_in_impl
                                 return false;
                             });
 
-                        ++latest_pos.y;
+                        //++latest_pos.y;
+                        ++latest_pos_inputs.y;
+                        latest_pos.y=latest_pos_inputs.y;
+                    }
 
+                    // if node is a PI, move it to its correct position
+                    else if (ctn.color_ntk.is_pi(n))
+                    {
+                        node2pos[n] = layout.move_node(pi2node[n], {latest_pos_inputs});
+
+                        // resolve conflicting PIs
+                        ctn.color_ntk.foreach_fanout(
+                            n,
+                            [&ctn, &n, &layout, &node2pos, &latest_pos, &latest_pos_inputs](const auto& fon)
+                            {
+                                if (ctn.color_ntk.color(fon) == ctn.color_south)
+                                {
+                                    node2pos[n] =
+                                        layout.create_buf(wire_east(layout, {latest_pos_inputs}, latest_pos), latest_pos);
+                                    ++latest_pos.x;
+                                }
+
+                                // PIs have only one fanout
+                                return false;
+                            });
+
+                        ++latest_pos_inputs.y;
+                        latest_pos.y=latest_pos_inputs.y;
                     }
                     /**NEW CODE
                      * MAJORITY GATES PLACEMENT

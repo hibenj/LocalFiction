@@ -4,6 +4,7 @@
 
 #include "catch.hpp"
 #include "fiction/algorithms/network_transformation/fanout_inverter_balancing.hpp"
+#include "fiction/io/write_svg_layout.hpp"
 #include "fiction/networks/sequential_technology_network.hpp"
 #include "fiction/utils/debug/network_writer.hpp"
 #include "utils/blueprints/network_blueprints.hpp"
@@ -39,13 +40,17 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::mux21_network<mockturtle::sequential<technology_network>>();
+    auto mux21 = blueprints::mux21_network<technology_network>();
 
     mux21.set_network_name("mux21");
 
     const auto layout = orthogonal<gate_layout>(mux21);
 
     fiction::debug::write_dot_layout(layout);
+
+    const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout);
+
+    write_qca_layout_svg(cell_level_lyt, "mux21_cell_lvl_lyt.svg");
 
     // network name
     CHECK(layout.get_layout_name() == "mux21");
@@ -54,14 +59,6 @@ TEST_CASE("Orthogonal mux", "[orthog]")
     CHECK(layout.get_name(layout.pi_at(0)) == "a");  // first PI
     CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
     CHECK(layout.get_name(layout.pi_at(2)) == "c");  // third PI
-
-    //std::cout<<layout.get_node(0);
-
-    /*CHECK(layout.get_name(layout.pi_at(0)) == "a");  // first PI
-    CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
-    CHECK(layout.get_name(layout.pi_at(2)) == "c");  // third PI*/
-    /*std::cout<<"stats x"<<layout.<<std::endl;
-    std::cout<<"stats y"<<<<std::endl;*/
 
     // PO names
     CHECK(layout.get_output_name(0) == "f");
@@ -112,7 +109,7 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
     fiction::debug::write_dot_layout(layout);
 
     // network name
-    CHECK(layout.get_layout_name() == "mux21");
+    //CHECK(layout.get_layout_name() == "mux21");
 
 }
 
@@ -126,7 +123,7 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
 
     orthogonal_physical_design_stats stats{};
 
-    auto layout = orthogonal_new<gate_layout>(mux21, {}, &stats);
+    auto layout = orthogonal_new_without_in<gate_layout>(mux21, {}, &stats);
 
     gate_level_drvs(layout);
 
@@ -156,7 +153,11 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
 
     fiction::debug::write_dot_layout(layout);
 
-    std::cout<<"clock number "<<layout.get_clock_number({6, 3, 0})<<std::endl;
+    const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout);
+
+    write_qca_layout_svg(cell_level_lyt, "TEST_maj_two_buf_cell_lvl_lyt.svg");
+
+    /*std::cout<<"clock number "<<layout.get_clock_number({6, 3, 0})<<std::endl;
     std::cout<<"clock number "<<layout.get_clock_number({7, 3, 0})<<std::endl;
     std::cout<<"clock number "<<layout.get_clock_number({7, 4, 0})<<std::endl;
     std::cout<<"clock number "<<layout.get_clock_number({7, 5, 0})<<std::endl;
@@ -165,7 +166,7 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
     std::cout<<"clock number "<<layout.get_clock_number({7, 3, 1})<<std::endl;
     std::cout<<"clock number "<<layout.get_clock_number({7, 4, 1})<<std::endl;
     std::cout<<"clock number "<<layout.get_clock_number({7, 5, 1})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({7, 6, 1})<<std::endl;
+    std::cout<<"clock number "<<layout.get_clock_number({7, 6, 1})<<std::endl;*/
 
 
     // network name
