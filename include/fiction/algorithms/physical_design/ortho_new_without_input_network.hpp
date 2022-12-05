@@ -929,9 +929,18 @@ class orthogonal_new_without_in_impl
                             ++latest_pos.x;
                             if (num_ris>1){
                                 //latest_pos.x = latest_pos.x + register_offset + (num_ris-1)*4;
-                                layout.resize({latest_pos.x - 1 + register_offset + (num_ris-1)*5, latest_pos.y-1, 1});
+                                int g_syc_const{0};
+                                ctn.color_ntk.foreach_ri(
+                                    [&](const auto& n){
+                                        auto ro_position = node2pos[ctn.color_ntk.ri_to_ro(n)];
+                                        tile<Lyt> ri_tile_ro_pos = static_cast<tile<Lyt>>(ro_position);
+                                        auto g_sync = floor((ri_tile_ro_pos.y)/4);
+                                        if(g_sync > g_syc_const)
+                                            g_syc_const=g_sync;
+                                    });
+                                layout.resize({latest_pos.x - 1 + register_offset + (num_ris-1)*5 + g_syc_const*2, latest_pos.y-1, 1});
                             }else
-                                layout.resize({latest_pos.x-1, latest_pos.y-1, 1});
+                                layout.resize({latest_pos.x-1, latest_pos.y-2, 1});
                             po_tile = layout.east(static_cast<tile<Lyt>>(n_s));
                         }
                         else
@@ -1008,6 +1017,7 @@ class orthogonal_new_without_in_impl
                                 tile<Lyt> ri_tile_s = layout.south(static_cast<tile<Lyt>>(n_s));
                                 ri_tile ={ri_tile_s.x, latest_pos.y};
                                 south_ri = ri_tile.y - ri_tile_s.y;
+                                //south_ri =0;
                             }
                         }});
 
@@ -1022,6 +1032,8 @@ class orthogonal_new_without_in_impl
                         {
                             auto n_s = node2pos[n];
 
+                            tile<Lyt> original_ri_position = static_cast<tile<Lyt>>(n_s);
+
                             tile<Lyt> ri_tile{};
 
                             // determine PO orientation
@@ -1031,7 +1043,7 @@ class orthogonal_new_without_in_impl
                             if (is_eastern_po_orientation_available(ctn, n) && !ctn.color_ntk.is_po(n))
                             {
                                 layout.resize({latest_pos.x + reg_number - 1, latest_pos.y - 1, 1});
-                                ri_tile = layout.east(static_cast<tile<Lyt>>(n_s));
+                                ri_tile = static_cast<tile<Lyt>>(n_s);
                             }
                             else
                             {
@@ -1047,8 +1059,8 @@ class orthogonal_new_without_in_impl
                             {
                                 std::cout<<n<<"Ri_tile coordinates"<<"X:"<<ri_tile.x<<"Y:"<<ri_tile.y<<std::endl;
                                 auto safe_ri_tile = ri_tile;
-                                ri_tile ={ri_tile.x, ri_tile.y-2};
-                                ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, ri_tile.y+3}));
+                                ri_tile ={ri_tile.x, original_ri_position.y};
+                                ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, safe_ri_tile.y + 1}));
                                 ri_tile = safe_ri_tile;
                             }
                             /*if(ctn.color_ntk.is_maj(n))
@@ -1070,16 +1082,16 @@ class orthogonal_new_without_in_impl
                             // place PO at the border and connect it by wire segments
                             else
                             {
-                                if(south_ri_b)
-                                {
-                                    const tile<Lyt> anker = {ri_tile.x, ri_tile.y};
-                                    ri_tile = layout.eastern_border_of(ri_tile);
-                                    layout.create_ri(wire_east(layout, anker, ri_tile),
-                                                     ctn.color_ntk.has_output_name(po_counter) ?
-                                                         ctn.color_ntk.get_output_name(po_counter++) :
-                                                         fmt::format("po{}", po_counter++),
-                                                     ri_tile);
-                                }else
+                                /*if(south_ri_b)
+                                {*/
+                                const tile<Lyt> anker = {ri_tile.x, ri_tile.y};
+                                ri_tile = layout.eastern_border_of(ri_tile);
+                                layout.create_ri(wire_east(layout, anker, ri_tile),
+                                                 ctn.color_ntk.has_output_name(po_counter) ?
+                                                     ctn.color_ntk.get_output_name(po_counter++) :
+                                                     fmt::format("po{}", po_counter++),
+                                                 ri_tile);
+                                /*}else
                                 {
                                     const auto anker = layout.create_buf(n_s, {ri_tile.x, ri_tile.y});
 
@@ -1090,7 +1102,7 @@ class orthogonal_new_without_in_impl
                                                          ctn.color_ntk.get_output_name(po_counter++) :
                                                          fmt::format("po{}", po_counter++),
                                                      ri_tile);
-                                }
+                                }*/
 
 
                             }
@@ -1116,6 +1128,7 @@ class orthogonal_new_without_in_impl
                                     --wire_to_ri_tile.x;
                                     --wire_to_ri_tile.y;
                                 }
+                                layout.resize({ri_tile.x, ri_tile.y, 1});
 
                                 auto pre_clock = layout.get_clock_number({ri_tile});
                                 if(wire_to_ri_tile.x < 1)
@@ -1163,17 +1176,24 @@ class orthogonal_new_without_in_impl
                             }
 
                             //general solution for N registers
-                            ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {latest_pos.x + num_ris + reg_number*4, ri_tile.y}));
+                            auto ro_position = node2pos[ctn.color_ntk.ri_to_ro(n)];
+                            tile<Lyt> ri_tile_ro_pos = static_cast<tile<Lyt>>(ro_position);
+                            /*std::cout<<"reg_number"<<reg_number<<std::endl;
+                            std::cout<<"ro_pos"<<floor((ri_tile_ro_pos.y)/4)<<std::endl;*/
+                            auto g_syc_const = floor((ri_tile_ro_pos.y)/4);
+                            ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {latest_pos.x + num_ris + reg_number*4 + g_syc_const*2, ri_tile.y}));
+
 
                             //wire south to latest_pos.y + num_ris
                             auto pre_clock = layout.get_clock_number({ri_tile});
                             tile<Lyt> wire_to_ri_tile{ri_tile.x, ri_tile.y + (num_ris-1-reg_number)*2 + 2};
                             ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, wire_to_ri_tile));
+                            layout.resize({ri_tile.x, ri_tile.y+1 +south_ri+num_ris-2, 1});
                             pre_clock = layout.get_clock_number({ri_tile});
                             //layout.resize({latest_pos.x +(reg_number)*4, latest_pos.y + num_ris-1, 1});
 
                             if (    (static_cast<tile<Lyt>>(node2pos[ctn.color_ntk.ro_at(reg_number)]).y - ri_tile.y) % 2 !=
-                                (static_cast<tile<Lyt>>(node2pos[ctn.color_ntk.ro_at(reg_number)]).x - ri_tile.x) % 2)
+                                (latest_pos_inputs.x - ri_tile.x) % 2)
                             {
                                 for(auto index = ri_tile.x - 1; index > latest_pos_inputs.x - 3 - 2*(num_ris-reg_number-1)+1; --index){
                                     layout.assign_clock_number({index,ri_tile.y,0}, pre_clock+1);
@@ -1228,8 +1248,7 @@ class orthogonal_new_without_in_impl
                                 ri_tile = static_cast<tile<Lyt>>(wire_north(layout, ri_tile, {ri_tile.x, static_cast<tile<Lyt>>(node2pos[ctn.color_ntk.ro_at(reg_number)]).y - 1}));
                             }
 
-                            ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {static_cast<tile<Lyt>>(node2pos[ctn.color_ntk.ro_at(reg_number)]).x, ri_tile.y}));
-                            //layout.resize({ri_tile.x , ri_tile.y, 1});
+                            ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {latest_pos_inputs.x, ri_tile.y}));
 
                             // auto current_ri = static_cast<mockturtle::signal<Ntk>>(n);
                         }
@@ -1237,7 +1256,7 @@ class orthogonal_new_without_in_impl
 
                     });
             }
-            //layout.resize({22 , 14, 1});
+            //layout.resize({30 , 20, 1});
             //++latest_pos.x;
         }
 
