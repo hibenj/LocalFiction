@@ -646,13 +646,24 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
     [&](const auto& nd) {
         ntk.foreach_fanout(nd,
                                [&](const auto& fon) {
+                                   //This was to color gates east even after inverters have been placed:
+                                   // resolved by placing inverters in the ordering network in seperate columns
+                                   /*if (ntk.is_inv(fon))
+                                   {
+                                       auto fos = fanouts(ctn.color_ntk, fon);
+                                       auto fo = fos[0];
+                                       auto color = ctn.color_east;
+                                       const auto fo_edges = fanin_edges(ctn.color_ntk, fo);
+                                       std::for_each(fo_edges.fanin_edges.cbegin(), fo_edges.fanin_edges.cend(),
+                                                     [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
+                                       paint_if(ctn, fo, color);
+                                   }*/
                                    auto color = ctn.color_east;
                                    const auto fo_edges = fanin_edges(ctn.color_ntk, fon);
                                    std::for_each(fo_edges.fanin_edges.cbegin(), fo_edges.fanin_edges.cend(),
                                                  [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
                                    paint_if(ctn, fon, color);
                                });
-
         });
 
 #if (PROGRESS_BARS)
@@ -757,13 +768,14 @@ class orthogonal_new_impl
 {
   public:
     orthogonal_new_impl(const Ntk& src, const orthogonal_physical_design_params& p, orthogonal_physical_design_stats& st) :
-            ntk{topo_view_input_sort{mockturtle::fanout_view{inverter_balancing(fanout_substitution<mockturtle::names_view<mockturtle::sequential<technology_network>>>(src))}}},
+            ntk{topo_view_input_sort{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<mockturtle::sequential<technology_network>>>(src)}}},
             ps{p},
             pst{st}
     {}
 
     Lyt run()
     {
+        //fiction::debug::write_dot_network(ntk, "ortho_inv_blc_o");
         // measure run time
         mockturtle::stopwatch stop{pst.time_total};
         // compute a coloring
@@ -784,7 +796,7 @@ class orthogonal_new_impl
         // first x-pos to use for gates is 1 because PIs take up the 0th column
         tile<Lyt> latest_pos{1, 0};
         if(ctn.color_ntk.isFo_inv_flag()){
-            ++latest_pos.x;
+            latest_pos.x = latest_pos.x + ctn.color_ntk.isFo_inv_flag_num();
         }
         tile<Lyt> latest_pos_inputs{0, 0};
 
@@ -805,6 +817,12 @@ class orthogonal_new_impl
         std::vector<std::pair<int, int>> resolve_rows;
 
         std::vector<std::pair<int, int>> resolve_columns;
+
+        std::vector<mockturtle::node<Ntk>> recolored_fanouts;
+
+        int insert_position_inv = 1;
+
+        bool po_resize = false;
 
 #if (PROGRESS_BARS)
         // initialize a progress bar
@@ -1243,9 +1261,10 @@ class orthogonal_new_impl
                         {
                             auto insert_position = latest_pos.x;
                             if(ntk.isFo_inv_flag() && ntk.is_inv(n) && ntk.is_pi(pre)){
-                                insert_position = 1;
+                                insert_position = insert_position_inv;
+                                ++insert_position_inv;
                                 --latest_pos.x;
-                                std::cout<<"INV";
+                                std::cout<<"INV"<<ntk.isFo_inv_flag_num()<<std::endl;
                             }
                             /*oder ist inverter und nächster knoten ist pi*/
                             if(ctn.color_ntk.is_fanout(n) && ctn.color_ntk.is_pi(pre))
@@ -1314,7 +1333,8 @@ class orthogonal_new_impl
                             std::cout << "maj buf: " << maj_buf[n_buf] << std::endl;
                         }*/
                         /**insert buffer for inputs colored south**/
-                        if(auto clr = ctn.color_ntk.color(pre1); ctn.color_ntk.is_ci(pre1) && clr != ctn.color_east)
+                        /**maybe only if a fanout is connected to them**/
+                        /*if(auto clr = ctn.color_ntk.color(pre1); ctn.color_ntk.is_ci(pre1) && clr != ctn.color_east)
                         {
                             pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
                             ++latest_pos.x;
@@ -1323,7 +1343,7 @@ class orthogonal_new_impl
                         {
                             pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
                             ++latest_pos.x;
-                        }
+                        }*/
 
                         /**insert buffer when a fan-out has two same colored outputs
                         this should be resolved in the coloring**/
@@ -1334,7 +1354,22 @@ class orthogonal_new_impl
                                         [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }))
                             {
                                 //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
-                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_east);
+                                if(!(std::find(recolored_fanouts.begin(), recolored_fanouts.end(), fos[1]) != recolored_fanouts.end()))
+                                {
+                                    ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_east);
+                                    recolored_fanouts.push_back(fos[1]);
+                                }else
+                                    ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                            }
+                            if(std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_east; }))
+                            {
+                                if(!(std::find(recolored_fanouts.begin(), recolored_fanouts.end(), fos[1]) != recolored_fanouts.end()))
+                                {
+                                    ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_south);
+                                    recolored_fanouts.push_back(fos[1]);
+                                }else
+                                    ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
                             }
                         }
                         if(auto fos = fanouts(ctn.color_ntk, pre2); ctn.color_ntk.is_fanout(pre2) && fos.size()>1)
@@ -1344,7 +1379,56 @@ class orthogonal_new_impl
                                             [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }))
                             {
                                 //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
-                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_east);
+                                if(!(std::find(recolored_fanouts.begin(), recolored_fanouts.end(), fos[1]) != recolored_fanouts.end()))
+                                {
+                                    ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_east);
+                                    recolored_fanouts.push_back(fos[1]);
+                                }else
+                                    ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                            }
+                            if(std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_east; }))
+                            {
+                                //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
+                                if(!(std::find(recolored_fanouts.begin(), recolored_fanouts.end(), fos[1]) != recolored_fanouts.end()))
+                                {
+                                    ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_south);
+                                    recolored_fanouts.push_back(fos[1]);
+                                }else
+                                    ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                            }
+                        }
+                        //is still not resolved we need color_null
+                        if(auto fos = fanouts(ctn.color_ntk, pre1); ctn.color_ntk.is_fanout(pre1) && fos.size()>1)
+                        {
+
+                            if(std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }))
+                            {
+                                //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
+                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                            }
+                            if(std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_east; }))
+                            {
+                                //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
+                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                            }
+                        }
+                        if(auto fos = fanouts(ctn.color_ntk, pre2); ctn.color_ntk.is_fanout(pre2) && fos.size()>1)
+                        {
+
+                            if(std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_south; }))
+                            {
+                                //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
+                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                            }
+                            if(std::all_of(fos.cbegin(), fos.cend(),
+                                            [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_east; }))
+                            {
+                                //evtl Spezialfall color = color_null, dann wird aber majority_buffer bei wiring von color_null benötigt
+                                ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
                             }
                         }
                         /**********************************************************************************************/
@@ -1452,7 +1536,22 @@ class orthogonal_new_impl
                                 std::swap(maj_buf[0], maj_buf[1]);
                                 pre_fo = pre1;
                             }
-
+                            bool new_south = pre1_t.y < pre2_t.y && !ctn.color_ntk.is_fanout(pre_fo) && maj_buf[0] == 0 && maj_buf[1] == 0;
+                            if(ctn.color_ntk.is_pi(pre2) && !new_south)
+                            {
+                                pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
+                                ++latest_pos.x;
+                            }
+                            if(ctn.color_ntk.is_pi(pre1) && !new_south)
+                            {
+                                pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
+                                ++latest_pos.x;
+                            }
+                            if (pre2_t.x > pre1_t.x){
+                                std::swap(pre1_t, pre2_t);
+                                std::swap(maj_buf[0], maj_buf[1]);
+                                pre_fo = pre1;
+                            }
                             /**NEW CODE
                              * !!new south wire option
                              * **/
@@ -1586,8 +1685,8 @@ class orthogonal_new_impl
                         {
                             // make sure pre1_t has an empty tile to its east and pre2_t to its south
                             std::swap(pre1_t, pre2_t);
-                            if (!layout.is_empty_tile(layout.east(pre1_t)) ||
-                                !layout.is_empty_tile(layout.south(pre2_t)))
+                            if (!(!layout.is_empty_tile(layout.east(pre1_t)) ||
+                                !layout.is_empty_tile(layout.south(pre2_t))))
                                 std::swap(pre1_t, pre2_t);
 
                             const auto ttt = layout.get_node(layout.east(pre1_t));
@@ -1626,7 +1725,11 @@ class orthogonal_new_impl
                         // determine PO orientation
                         if (is_eastern_po_orientation_available(ctn, n))
                         {
-                            ++latest_pos.x;
+                            /*if(!po_resize){
+                                ++latest_pos.x;
+                                po_resize = true;
+                            }*/
+                            /*++latest_pos.x;*/
                             if (num_ris>1){
                                 //latest_pos.x = latest_pos.x + register_offset + (num_ris-1)*4;
                                 int g_syc_const{0};
@@ -1638,9 +1741,10 @@ class orthogonal_new_impl
                                         if(g_sync > g_syc_const)
                                             g_syc_const=g_sync;
                                     });
-                                layout.resize({latest_pos.x - 1 + register_offset + (num_ris-1)*5 + g_syc_const*2, latest_pos.y-1, 1});
-                            }else
-                                layout.resize({latest_pos.x-1, latest_pos.y-2, 1});
+                                layout.resize({latest_pos.x + register_offset + (num_ris-1)*5 + g_syc_const*2, latest_pos.y-1, 1});
+                            }else{
+                                layout.resize({latest_pos.x, latest_pos.y-1, 1});
+                            }
                             po_tile = layout.east(static_cast<tile<Lyt>>(n_s));
                         }
                         else
@@ -1660,7 +1764,7 @@ class orthogonal_new_impl
                         }*/
 
                         // check if PO position is located at the border
-                        if (layout.is_at_eastern_border(po_tile))
+                        /*if (layout.is_at_eastern_border(po_tile))
                         {
                             layout.create_po(n_s,
                                              ctn.color_ntk.has_output_name(po_counter) ?
@@ -1680,8 +1784,7 @@ class orthogonal_new_impl
                                                  ctn.color_ntk.get_output_name(po_counter++) :
                                                  fmt::format("po{}", po_counter++),
                                              po_tile);
-                        }
-                        std::cout<<n<<"PO plaziert auf"<<"X:"<<po_tile.x<<"Y:"<<po_tile.y<<std::endl;
+                        }*/
                         //Ros.erase(std::find(Ros.begin(), Ros.end(), n));
                     }
                 }
@@ -1692,6 +1795,55 @@ class orthogonal_new_impl
 #endif
             });
 
+        /**********************************************************Begin: Place Pos***************************************************************/
+        //Since the layout size is only known after placing all gates, the POs have to be placed after the main algorithm
+        //
+        //
+        ctn.color_ntk.foreach_po(
+            [&](const auto& po){
+                const auto n_s = node2pos[po];
+
+                tile<Lyt> po_tile{};
+
+                // determine PO orientation
+                if (is_eastern_po_orientation_available(ctn, po))
+                {
+                    po_tile = layout.east(static_cast<tile<Lyt>>(n_s));
+                    //++latest_pos.x;
+                }
+                else
+                {
+                    po_tile = layout.south(static_cast<tile<Lyt>>(n_s));
+                    //++latest_pos.y;
+                }
+
+                // check if PO position is located at the border
+                if (layout.is_at_eastern_border(po_tile))
+                {
+                    layout.create_po(n_s,
+                                     ctn.color_ntk.has_output_name(po_counter) ?
+                                         ctn.color_ntk.get_output_name(po_counter++) :
+                                         fmt::format("po{}", po_counter++),
+                                     po_tile);
+                }
+                // place PO at the border and connect it by wire segments
+                else
+                {
+                    const auto anker = layout.create_buf(n_s, po_tile);
+
+                    po_tile = layout.eastern_border_of(po_tile);
+
+                    layout.create_po(wire_east(layout, static_cast<tile<Lyt>>(anker), po_tile),
+                                     ctn.color_ntk.has_output_name(po_counter) ?
+                                         ctn.color_ntk.get_output_name(po_counter++) :
+                                         fmt::format("po{}", po_counter++),
+                                     po_tile);
+                }
+                std::cout<<po<<"PO plaziert auf"<<"X:"<<po_tile.x<<"Y:"<<po_tile.y<<std::endl;
+            });
+
+
+        /**********************************************************End: Place Pos***************************************************************/
         /**********************************************************Begin: Place Ris***************************************************************/
         // The RIs need to be placed in the same order as the ROs at the Inputs
         //
@@ -1782,8 +1934,8 @@ class orthogonal_new_impl
                             // place PO at the border and connect it by wire segments
                             else
                             {
-                                /*if(south_ri_b)
-                                {*/
+                                if(south_ri_b)
+                                {
                                     const tile<Lyt> anker = {ri_tile.x, ri_tile.y};
                                     ri_tile = layout.eastern_border_of(ri_tile);
                                     layout.create_ri(wire_east(layout, anker, ri_tile),
@@ -1791,7 +1943,7 @@ class orthogonal_new_impl
                                                          ctn.color_ntk.get_output_name(po_counter++) :
                                                          fmt::format("po{}", po_counter++),
                                                      ri_tile);
-                                /*}else
+                                }else
                                 {
                                     const auto anker = layout.create_buf(n_s, {ri_tile.x, ri_tile.y});
 
@@ -1802,7 +1954,7 @@ class orthogonal_new_impl
                                                          ctn.color_ntk.get_output_name(po_counter++) :
                                                          fmt::format("po{}", po_counter++),
                                                      ri_tile);
-                                }*/
+                                }
 
 
                             }

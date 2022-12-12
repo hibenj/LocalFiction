@@ -2,6 +2,7 @@
 // Created by Hien Benjamin on 27.06.2022.
 //
 #include "catch.hpp"
+#include "fiction/utils/debug/network_writer.hpp"
 #include "utils/blueprints/network_blueprints.hpp"
 
 #include <fiction/algorithms/network_transformation/fanout_inverter_balancing.hpp>
@@ -40,6 +41,8 @@ TEST_CASE("Name conservation test", "[network-conversion-n]")
 TEST_CASE("Name conservation balance", "[network-balance]")
 {
     auto maj = blueprints::fanout_inv_blc<mockturtle::names_view<mockturtle::aig_network>>();
+    fiction::debug::write_dot_network(maj, "aig");
+
     maj.set_network_name("fib");
 
     std::cout<<"NODES AIG ";
@@ -47,6 +50,7 @@ TEST_CASE("Name conservation balance", "[network-balance]")
     std::cout<<std::endl;
 
     const auto substituted = fanout_substitution<mockturtle::names_view<fiction::technology_network>>(maj);
+    fiction::debug::write_dot_network(substituted, "fo_substituted");
     std::cout<<"NODES FOS ";
     substituted.foreach_node([&](const auto& node) {std::cout<<node<<" ";});
     std::cout<<std::endl;
@@ -77,9 +81,20 @@ TEST_CASE("Name conservation balance", "[network-balance]")
     std::cout<<std::endl;
 
     const auto balanced_fib = mockturtle::fanout_view{inverter_balancing(fanout_substitution<mockturtle::names_view<fiction::technology_network>>(maj))};
-
+    fiction::debug::write_dot_network(balanced_fib, "inv_balanced");
     std::cout<<"size ";
     std::cout<<balanced_fib.size()<<std::endl;
+
+    std::cout<<"FOS with INV ";
+    balanced_fib.foreach_node([&](const auto& node) {
+                                  if(!balanced_fib.is_po(node) && !balanced_fib.is_constant(node)){
+                                      auto fos = fanouts(balanced_fib, node);
+                                      auto fo = fos[0];
+                                      if(balanced_fib.is_inv(fo))
+                                          std::cout<<node<<" ";
+                                  }
+                              });
+    std::cout<<std::endl;
 
     std::cout<<"NODES BLC ";
     balanced_fib.foreach_node([&](const auto& node) {std::cout<<node<<" ";});

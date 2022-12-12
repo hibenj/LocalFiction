@@ -193,6 +193,11 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
         return fo_inv_flag;
     }
 
+    [[nodiscard]] int isFo_inv_flag_num() const
+    {
+        return fo_inv_flag_num;
+    }
+
     void update_topo()
     {
         topo_order.clear();
@@ -360,6 +365,7 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                                       {
                                           /*Inverter Flag*/
                                           fo_inv_flag=true;
+                                          ++fo_inv_flag_num;
                                           my_ntk.foreach_fanout(fon,
                                                              [&](const auto& fon_inv) { output_node[0] = fon_inv; });
                                       }
@@ -505,6 +511,7 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
 
 
     bool fo_inv_flag = false;
+    int fo_inv_flag_num = 0;
 
     uint32_t num_p;
     uint32_t num_c = 0u;

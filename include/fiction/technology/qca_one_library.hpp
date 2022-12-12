@@ -103,6 +103,7 @@ class qca_one_library : public fcn_gate_library<qca_technology, 5, 5>
         }
         catch (const std::out_of_range&)
         {
+            std::cout<<t.x<<" "<<t.y<<std::endl;
             throw unsupported_gate_orientation_exception(t, p);
         }
 

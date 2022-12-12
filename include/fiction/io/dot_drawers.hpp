@@ -54,10 +54,13 @@ class technology_dot_drawer : public mockturtle::gate_dot_drawer<Ntk>
             return "snow2";
         }
 
-        if (ntk.is_ro(n))
+        /*if constexpr (has_is_ro_v<Ntk>)
         {
-            return "snow2";
-        }
+            if (ntk.is_ro(n))
+            {
+                return "snow2";
+            }
+        }*/
 
         if constexpr (has_is_fanout_v<Ntk>)
         {

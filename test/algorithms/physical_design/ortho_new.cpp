@@ -40,28 +40,30 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::mux21_network<technology_network>();
+    auto mux21 = blueprints::multi_out<mockturtle::names_view<mockturtle::aig_network>>();
 
-    mux21.set_network_name("mux21");
+    //fiction::debug::write_dot_network(mux21, "ortho_inv_blc");
 
-    const auto layout = orthogonal<gate_layout>(mux21);
+    //mux21.set_network_name("mux21");
+
+    const auto layout = orthogonal_new<gate_layout>(mux21);
 
     fiction::debug::write_dot_layout(layout);
 
-    const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout);
+    /*const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout);
 
-    write_qca_layout_svg(cell_level_lyt, "mux21_cell_lvl_lyt.svg");
+    write_qca_layout_svg(cell_level_lyt, "mux21_cell_lvl_lyt.svg");*/
 
     // network name
-    CHECK(layout.get_layout_name() == "mux21");
+    //CHECK(layout.get_layout_name() == "mux21");
 
     // PI names
-    CHECK(layout.get_name(layout.pi_at(0)) == "a");  // first PI
-    CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
-    CHECK(layout.get_name(layout.pi_at(2)) == "c");  // third PI
+    //CHECK(layout.get_name(layout.pi_at(0)) == "a");  // first PI
+    //CHECK(layout.get_name(layout.pi_at(1)) == "b");  // second PI
+    //CHECK(layout.get_name(layout.pi_at(2)) == "c");  // third PI
 
     // PO names
-    CHECK(layout.get_output_name(0) == "f");
+    //CHECK(layout.get_output_name(0) == "f");
 }
 
 
@@ -78,7 +80,7 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::seq_one<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::topolinano_network<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
