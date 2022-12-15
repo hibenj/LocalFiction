@@ -221,6 +221,31 @@ class orthogonal_sequential_network_impl
 
                         tile<Lyt> t{};
 
+                        auto fo_ri_po = fanouts(ctn.color_ntk, pre1);
+
+                        if(fo_ri_po.size()==2)
+                        {
+                            if ((ctn.color_ntk.is_ri(fo_ri_po[0]) && ctn.color_ntk.is_po(fo_ri_po[0])) ||
+                                (ctn.color_ntk.is_ri(fo_ri_po[1]) && ctn.color_ntk.is_po(fo_ri_po[1])))
+                            {
+                                std::cout << "RI und PO" << pre1 << std::endl;
+                                ++latest_pos.y;
+                                ++latest_pos.x;
+                            }
+                        }
+                        fo_ri_po = fanouts(ctn.color_ntk, pre2);
+
+                        if(fo_ri_po.size()==2)
+                        {
+                            if ((ctn.color_ntk.is_ri(fo_ri_po[0]) && ctn.color_ntk.is_po(fo_ri_po[0])) ||
+                                (ctn.color_ntk.is_ri(fo_ri_po[1]) && ctn.color_ntk.is_po(fo_ri_po[1])))
+                            {
+                                std::cout << "RI und PO" << pre1 << std::endl;
+                                ++latest_pos.y;
+                                ++latest_pos.x;
+                            }
+                        }
+
                         // n is colored east
                         if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_east)
                         {
@@ -270,10 +295,10 @@ class orthogonal_sequential_network_impl
 
                                     // use larger x position of predecessors
                                     t = {latest_pos.x, pre2_t.y};
-                                    /*std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
+                                    std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
                                     std::cout<<n<<"Pre1: "<<pre1<<std::endl;
                                     std::cout<<n<<"Pre2: "<<pre2<<std::endl;
-                                    std::cout<<n<<"color: "<<"south"<<std::endl;*/
+                                    std::cout<<n<<"color: "<<"south"<<std::endl;
                                     ++latest_pos.x;
                                 }
                                 else
@@ -283,10 +308,10 @@ class orthogonal_sequential_network_impl
 
                                     // use larger x position of predecessors
                                     t = {pre1_t.x, pre2_t.y};
-                                    /*std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
+                                    std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
                                     std::cout<<n<<"Pre1: "<<pre1<<std::endl;
                                     std::cout<<n<<"Pre2: "<<pre2<<std::endl;
-                                    std::cout<<n<<"color: "<<"south"<<std::endl;*/
+                                    std::cout<<n<<"color: "<<"south"<<std::endl;
                                 }
                                 if(pre2_t.y+1>latest_pos.y)
                                 {
@@ -304,6 +329,10 @@ class orthogonal_sequential_network_impl
                                     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t.y + 1}));
 
                                     latest_pos.y = t.y+1;
+                                    std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
+                                    std::cout<<n<<"Pre1: "<<pre1<<std::endl;
+                                    std::cout<<n<<"Pre2: "<<pre2<<std::endl;
+                                    std::cout<<n<<"color: "<<"south"<<std::endl;
                                 }
                                 else
                                 {
@@ -314,6 +343,10 @@ class orthogonal_sequential_network_impl
                                     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t.y + 1}));
 
                                     ++latest_pos.y;
+                                    std::cout<<n<<"And plaziert auf"<<"X:"<<t.x<<"Y:"<<t.y<<std::endl;
+                                    std::cout<<n<<"Pre1: "<<pre1<<std::endl;
+                                    std::cout<<n<<"Pre2: "<<pre2<<std::endl;
+                                    std::cout<<n<<"color: "<<"south"<<std::endl;
                                 }
                             }
                         }
@@ -418,8 +451,12 @@ class orthogonal_sequential_network_impl
                                 ++repos;
                                 //layout.resize({latest_pos.x + (num_ris-1)*4, latest_pos.y-1, 1});
                                 layout.resize({latest_pos.x + reg_number - 1, latest_pos.y - 1, 1});
-                                tile<Lyt> ri_tile_s = layout.south(static_cast<tile<Lyt>>(n_s));
-                                ri_tile ={ri_tile_s.x, latest_pos.y-1};
+                                ri_tile = static_cast<tile<Lyt>>(n_s);
+                                if(ctn.color_ntk.is_po(n))
+                                {
+                                    --ri_tile.x;
+                                }
+                                ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, ri_tile.y + 2}));
                                 if (south_ri>0){south_ri_b = true;}
                             }
                             if(south_ri_b)
@@ -432,8 +469,9 @@ class orthogonal_sequential_network_impl
                             }
 
                             // check if PO position is located at the border
-                            if (layout.is_at_eastern_border(ri_tile))
+                            if (layout.is_at_eastern_border({ri_tile.x + 1, ri_tile.y}))
                             {
+                                ++ri_tile.x;
                                 layout.create_ri(n_s,
                                                  ctn.color_ntk.has_output_name(po_counter) ?
                                                      ctn.color_ntk.get_output_name(po_counter++) :
@@ -443,29 +481,13 @@ class orthogonal_sequential_network_impl
                             // place PO at the border and connect it by wire segments
                             else
                             {
-                                /*if(south_ri_b)
-                                {*/
-                                const tile<Lyt> anker = {ri_tile.x, ri_tile.y};
+                                const tile<Lyt> anker{ri_tile};
                                 ri_tile = layout.eastern_border_of(ri_tile);
                                 layout.create_ri(wire_east(layout, anker, ri_tile),
                                                  ctn.color_ntk.has_output_name(po_counter) ?
                                                      ctn.color_ntk.get_output_name(po_counter++) :
                                                      fmt::format("po{}", po_counter++),
                                                  ri_tile);
-                                /*}else
-                                {
-                                    const auto anker = layout.create_buf(n_s, {ri_tile.x, ri_tile.y});
-
-                                    ri_tile = layout.eastern_border_of(ri_tile);
-
-                                    layout.create_ri(wire_east(layout, static_cast<tile<Lyt>>(anker), ri_tile),
-                                                     ctn.color_ntk.has_output_name(po_counter) ?
-                                                         ctn.color_ntk.get_output_name(po_counter++) :
-                                                         fmt::format("po{}", po_counter++),
-                                                     ri_tile);
-                                }*/
-
-
                             }
                             layout.resize({latest_pos.x + 1 + (num_ris-1)*4, latest_pos.y-1 + (num_ris)*2, 1});
                             /***********************************************************End: Place Ris***************************************************************/
@@ -475,7 +497,7 @@ class orthogonal_sequential_network_impl
                             /**********************************************************Begin: Wire Registers***************************************************************/
                             std::cout << n << "latest pos "
                                       << "X:" << latest_pos.x << "Y:" << latest_pos.y << std::endl;
-                            ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, latest_pos.y + 2 + reg_number - repos + south_ri}));
+                            /*ri_tile = static_cast<tile<Lyt>>(wire_south(layout, ri_tile, {ri_tile.x, latest_pos.y + 2 + reg_number - repos + south_ri}));
 
                             std::cout << n << "repos "<<repos<<std::endl;
 
@@ -539,8 +561,8 @@ class orthogonal_sequential_network_impl
                             //general solution for N registers
                             auto ro_position = node2pos[ctn.color_ntk.ri_to_ro(n)];
                             tile<Lyt> ri_tile_ro_pos = static_cast<tile<Lyt>>(ro_position);
-                            /*std::cout<<"reg_number"<<reg_number<<std::endl;
-                            std::cout<<"ro_pos"<<floor((ri_tile_ro_pos.y)/4)<<std::endl;*/
+                            *//*std::cout<<"reg_number"<<reg_number<<std::endl;
+                            std::cout<<"ro_pos"<<floor((ri_tile_ro_pos.y)/4)<<std::endl;*//*
                             auto g_syc_const = floor((ri_tile_ro_pos.y)/4);
                             ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {latest_pos.x + num_ris + reg_number*4 + g_syc_const*2, ri_tile.y}));
 
@@ -608,7 +630,7 @@ class orthogonal_sequential_network_impl
                                 ri_tile = static_cast<tile<Lyt>>(wire_north(layout, ri_tile, {ri_tile.x, static_cast<tile<Lyt>>(node2pos[ctn.color_ntk.ro_at(reg_number)]).y - 1}));
                             }
 
-                            ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {latest_pos_inputs.x, ri_tile.y}));
+                            ri_tile = static_cast<tile<Lyt>>(wire_east(layout, ri_tile, {latest_pos_inputs.x, ri_tile.y}));*/
 
                             // auto current_ri = static_cast<mockturtle::signal<Ntk>>(n);
                         }
