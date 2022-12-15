@@ -30,9 +30,9 @@ std::string benchmark_path_bench(const std::string& benchmark_name, const std::s
 
 int main()
 {
-    experiments::experiment<std::string, uint32_t, uint32_t, uint32_t, double, double, uint64_t, uint64_t, uint64_t, uint64_t>
+    experiments::experiment<std::string, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, double, double, uint64_t, uint64_t, uint64_t, uint64_t>
         ortho_new_exp( "Ortho_majority_placement",
-                      "Benchmark",
+                      "Benchmark", "w", "h",
                       "State of the art size",
                       "ortho_new size",
                       "size diff",
@@ -43,8 +43,10 @@ int main()
                       "State of the art wire number",
                       "ortho_new wire number");
 
-    fiction::orthogonal_physical_design_stats st_aig;
-    fiction::orthogonal_physical_design_stats st_tech;
+    fiction::orthogonal_physical_design_stats st_aig_one;
+    fiction::orthogonal_physical_design_stats st_aig_two;
+    fiction::orthogonal_physical_design_stats st_tech_one;
+    fiction::orthogonal_physical_design_stats st_tech_two;
 
     /**for custom circuits**/
     /*static constexpr const std::array benchmark_names {"mux21", "maj1", "maj4", "one_and", "two_and", "three_and", "four_and", "maj_to_maj"};
@@ -101,11 +103,11 @@ int main()
     }*/
 
     /**for sequential circuits**/
-    /*fiction::technology_network tech_two;
+    fiction::technology_network tech_two;
     mockturtle::klut_network klut;
     mockturtle::aig_network aig_bench;
 
-    const std::string& benchmark = "test_bench/b04";
+    const std::string& benchmark = "test_bench/b01";
 
     const auto read_blif_result =
         lorina::read_bench( benchmark_path_bench(benchmark), mockturtle::bench_reader( klut ) );
@@ -116,17 +118,41 @@ int main()
             std::cout<<"ONode "<<n<<std::endl;
         });
 
+    fiction::debug::write_dot_network(klut, fmt::format("{}{}", benchmark, "logic_aig_sequential"));
+
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    const auto layout_two = fiction::orthogonal_new<gate_layout>(klut, {}, &st_tech);*/
+    const auto layout_two = fiction::orthogonal<gate_layout>(klut, {}, &st_tech_one);
 
     /**for combinational benchmarks**/
-    static constexpr const uint64_t bench_select = fiction_experiments::trindade16;
 
-    const std::string benchmark = "fontes18/2bitAdderMaj";
+    /*static constexpr const std::array ISCAS {
+        *//*"ISCAS85/c17",*//* "ISCAS85/c432"*//*, "ISCAS85/c499", "ISCAS85/c880", "ISCAS85/c1355", "ISCAS85/c1908",
+        "ISCAS85/c2670", "ISCAS85/c3540", "ISCAS85/c5315", "ISCAS85/c6288", "ISCAS85/c7552"*//*};*/
 
-    /*for (const auto& benchmark : fiction_experiments::all_benchmarks(bench_select))
-    {*/
+    /*static constexpr const std::array EPFL {
+        "EPFL/ctrl", "EPFL/int2float", "EPFL/router", "EPFL/dec", "EPFL/cavlc", "EPFL/adder", "EPFL/priority", "EPFL/i2c",
+        "EPFL/bar", "EPFL/max", "EPFL/sin", "EPFL/arbiter", "EPFL/voter", "EPFL/square"};*/
+
+    /*static constexpr const uint64_t bench_select = fiction_experiments::fontes18 &
+                                                   ~fiction_experiments::xor2_f &
+                                                   ~fiction_experiments::t &
+                                                   ~fiction_experiments::t_5 &
+                                                   ~fiction_experiments::c17 &
+                                                   ~fiction_experiments::majority_5_r1&
+                                                   ~fiction_experiments::newtag&
+                                                   ~fiction_experiments::clpl&
+                                                   ~fiction_experiments::xor5_r1&
+                                                   ~fiction_experiments::xor5_maj&
+                                                   ~fiction_experiments::majority_5_r1;*/
+
+    //static constexpr const uint64_t bench_select = fiction_experiments::trindade16;
+
+    //const std::string benchmark = "fontes18/b1_r2";
+
+    //for (const auto& benchmark : fiction_experiments::all_benchmarks(bench_select))
+    //for (const auto& benchmark : ISCAS)
+    /*{
         fmt::print( "[i] processing {}\n", benchmark );
 
         mockturtle::aig_network aig;
@@ -150,29 +176,30 @@ int main()
                 std::cout<<"Node "<<n<<std::endl;
             });
 
-        fiction::debug::write_dot_network(aig, "one");
+        fiction::debug::write_dot_network(aig, fmt::format("{}{}.dot", benchmark, "logic_aig"));
+        fiction::debug::write_dot_network(tech, fmt::format("{}{}.dot", benchmark, "logic_tech"));
 
 
         using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-        const auto layout_one = fiction::orthogonal<gate_layout>(aig, {}, &st_aig);
+        const auto layout_one = fiction::orthogonal<gate_layout>(aig, {}, &st_aig_one);
 
         //fiction::debug::write_dot_layout(layout_two);
 
-        const auto cell_level_lyt_o = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout_one);
+        *//*const auto cell_level_lyt_o = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout_one);
 
-        write_qca_layout_svg(cell_level_lyt_o, "2bitAdderMaj_ortho.svg");
+        write_qca_layout_svg(cell_level_lyt_o, fmt::format("{}{}.svg", benchmark, "_ortho"));*//*
 
-        const auto layout_two = fiction::orthogonal_new<gate_layout>(aig, {}, &st_tech);
+        const auto layout_two = fiction::orthogonal_new<gate_layout>(aig, {}, &st_aig_two);
 
-        /*const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout_two);
+        *//*const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout_two);
 
-        write_qca_layout_svg(cell_level_lyt, "2bitAdderMaj_ortho_new.svg");*/
+        write_qca_layout_svg(cell_level_lyt, fmt::format("{}{}.svg", benchmark, "_ortho_new"));
 
-        fiction::debug::write_dot_layout(layout_two);
+        fiction::debug::write_dot_layout(layout_two);*/
 
-        ortho_new_exp(benchmark, (st_aig.x_size-1) * (st_aig.y_size-1), (st_tech.x_size-1) * (st_tech.y_size-1), (st_aig.x_size-1) * (st_aig.y_size-1) - (st_tech.x_size-1) * (st_tech.y_size-1), mockturtle::to_seconds(st_aig.time_total),mockturtle::to_seconds(st_tech.time_total),
-                      st_aig.num_gates, st_tech.num_gates, st_aig.num_wires, st_tech.num_wires);
+        ortho_new_exp(benchmark, (st_aig_one.x_size-1), (st_aig_one.y_size-1),(st_aig_one.x_size-1) * (st_aig_one.y_size-1), (st_aig_two.x_size-1) * (st_aig_two.y_size-1), (st_aig_one.x_size-1) * (st_aig_one.y_size-1) - (st_aig_two.x_size-1) * (st_aig_two.y_size-1), mockturtle::to_seconds(st_aig_one.time_total),mockturtle::to_seconds(st_aig_two.time_total),
+                      st_aig_one.num_gates, st_aig_two.num_gates, st_aig_one.num_wires, st_aig_two.num_wires);
     //}
     ortho_new_exp.save();
     ortho_new_exp.table();

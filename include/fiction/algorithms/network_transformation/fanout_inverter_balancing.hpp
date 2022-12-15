@@ -51,9 +51,12 @@ class inverter_balancing_impl
                 auto fanout_inv = fanouts(fo_ntk, n);
                 auto balance = std::all_of(fanout_inv.begin(), fanout_inv.end(),[&](const auto& fo_node)
                                               {return fo_ntk.is_inv(fo_node);});
-                if(balance && fanout_inv.size()>0){
-                    del_inv = fanout_inv[1];
-                    blc_fos=n;
+                if(balance && fanout_inv.size()>1){
+                    /*del_inv = fanout_inv[1];
+                    blc_fos=n;*/
+                    del_inv.emplace_back(fanout_inv[1]);
+                    blc_fos.emplace_back(n);
+                    new_inv.emplace_back(fanout_inv[0]);
                 }
             }
 
@@ -63,11 +66,11 @@ class inverter_balancing_impl
                                   auto fn         = ntk.get_node(f);
 
                                   /*New children for balanced fan-out nodes*/
-                                  if(blc_fos==n){
+                                  /*if(blc_fos==n){
                                       const auto fos = fanouts(fo_ntk, n);
                                       //fn = fos[0];
                                       new_inv=fos[0];
-                                  }
+                                  }*/
 
                                   /*New children for new inverter node*/
                                   /*bool inv_ch = false;
@@ -84,10 +87,19 @@ class inverter_balancing_impl
                                   }*/
 
                                   /*New children for nodes with deleted Inverters as fan-in*/
-                                  if(del_inv == fn){
+                                  for(int i = 0; i<blc_fos.size(); ++i)
+                                  {
+                                      if(del_inv[i] == fn)
+                                      {
+                                          const auto fis = fanins(fo_ntk, fn);
+                                          fn = new_inv[i];
+                                      }
+                                  }
+
+                                  /*if(del_inv == fn){
                                       const auto fis = fanins(fo_ntk, fn);
                                       fn = new_inv;
-                                  }
+                                  }*/
 
                                   const auto tgt_signal = old2new[fn];
 
@@ -124,12 +136,12 @@ class inverter_balancing_impl
 
                 if constexpr (has_is_inv_v<TopoNtkSrc>)
                 {
-                    if (ntk.is_inv(g) && new_inv==g)
+                    if (ntk.is_inv(g) && std::find(new_inv.begin(), new_inv.end(), g) != new_inv.end())
                     {
                         old2new[g] = ntk_dest.create_buf(children[0]);
                         return true;
                     }
-                    else if (ntk.is_inv(g) && del_inv == g)
+                    else if (ntk.is_inv(g) && std::find(del_inv.begin(), del_inv.end(), g) != del_inv.end())
                     {
                         //old2new[g] = ntk_dest.create_buf(children[0]);
                         return true;
@@ -137,7 +149,7 @@ class inverter_balancing_impl
                 }
                 if constexpr (fiction::has_is_buf_v<TopoNtkSrc> && mockturtle::has_create_buf_v<NtkSrc>)
                 {
-                    if (ntk.is_buf(g) && blc_fos == g)
+                    if (ntk.is_buf(g) && std::find(blc_fos.begin(), blc_fos.end(), g) != blc_fos.end())
                     {
                         old2new[g] = ntk_dest.create_not(children[0]);
                         return true;
@@ -241,9 +253,9 @@ class inverter_balancing_impl
     TopoNtkSrc ntk;
     mockturtle::fanout_view<TopoNtkSrc> fo_ntk{ntk};
     using node = typename NtkSrc::node;
-    node del_inv;
-    node new_inv;
-    node blc_fos;
+    std::vector<node> del_inv;
+    std::vector<node> new_inv;
+    std::vector<node> blc_fos;
 };
 
 template<typename NtkSrc>
@@ -259,7 +271,7 @@ bool inverter_balancing_recursive(const NtkSrc& ntk){
                 auto fanout_inv = fanouts(fo_ntk, g);
                 auto balance = std::all_of(fanout_inv.begin(), fanout_inv.end(),[&](const auto& fo_node)
                                               {return fo_ntk.is_inv(fo_node);});
-                if(balance && fanout_inv.size()>0){
+                if(balance && fanout_inv.size()>1){
                     return_val = true;
                 }
             }

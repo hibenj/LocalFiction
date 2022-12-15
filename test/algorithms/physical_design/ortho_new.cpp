@@ -13,6 +13,9 @@
 #include <fiction/algorithms/physical_design/apply_gate_library.hpp>
 #include <fiction/algorithms/physical_design/ortho_new.hpp>
 #include <fiction/algorithms/physical_design/ortho_new_without_input_network.hpp>
+#include <fiction/algorithms/physical_design/ortho_ordering_network.hpp>
+#include <fiction/algorithms/physical_design/ortho_majority_gates_network.hpp>
+#include <fiction/algorithms/physical_design/ortho_sequential_network.hpp>
 #include <fiction/algorithms/verification/design_rule_violations.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>
 #include <fiction/layouts/cell_level_layout.hpp>
@@ -40,16 +43,17 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::multi_out<mockturtle::names_view<mockturtle::aig_network>>();
+    auto mux21 = blueprints::mux21_network<mockturtle::names_view<technology_network>>();
 
     //fiction::debug::write_dot_network(mux21, "ortho_inv_blc");
 
     //mux21.set_network_name("mux21");
 
-    const auto layout = orthogonal_new<gate_layout>(mux21);
+    const auto layout = orthogonal_sequential_network<gate_layout>(mux21);
 
     fiction::debug::write_dot_layout(layout);
 
+    gate_level_drvs(layout);
     /*const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout);
 
     write_qca_layout_svg(cell_level_lyt, "mux21_cell_lvl_lyt.svg");*/
@@ -80,12 +84,12 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::topolinano_network<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::majority<mockturtle::names_view<technology_network>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
 
-    const auto layout = orthogonal_new<gate_layout>(mux21, {}, &stats);
+    const auto layout = orthogonal_ordering_network<gate_layout>(mux21, {}, &stats);
 
     /*layout.foreach_fanin(28,
                       [&](const auto& f)
@@ -125,7 +129,7 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
 
     orthogonal_physical_design_stats stats{};
 
-    auto layout = orthogonal_new_without_in<gate_layout>(mux21, {}, &stats);
+    auto layout = orthogonal_sequential_network<gate_layout>(mux21, {}, &stats);
 
     gate_level_drvs(layout);
 

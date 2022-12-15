@@ -496,6 +496,27 @@ Ntk fanout_inv_blc()
 }
 
 template <typename Ntk>
+Ntk fanout_inv_blc_one()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+
+    const auto n1  = ntk.create_not(x1);
+
+    const auto a1  = ntk.create_and(n1, x2);
+    const auto a2  = ntk.create_and(n1, x3);
+    const auto a3  = ntk.create_and(a1, a2);
+
+
+    ntk.create_po(a3, "f");
+
+    return ntk;
+}
+
+
+template <typename Ntk>
 Ntk TEST_maj_one_buf()
 {
     Ntk ntk{};
@@ -598,13 +619,13 @@ template <typename Ntk>
 Ntk TEST_maj_four_buf()
 {
     Ntk ntk{};
-    const auto x1    = ntk.create_pi("a");
-    const auto x2    = ntk.create_pi("b");
-    const auto x3    = ntk.create_pi("c");
-    const auto x4    = ntk.create_pi("c");
-    const auto x5    = ntk.create_pi("c");
-    const auto x6    = ntk.create_pi("c");
-    const auto x7    = ntk.create_pi("c");
+    const auto x1    = ntk.create_pi("m1");
+    const auto x2    = ntk.create_pi("m2");
+    const auto x3    = ntk.create_pi("m3");
+    const auto x4    = ntk.create_pi("d");
+    const auto x5    = ntk.create_pi("e");
+    const auto x6    = ntk.create_pi("f");
+    const auto x7    = ntk.create_pi("g");
 
     const auto m1 = ntk.create_maj(x1, x2, x3);
     const auto a1 = ntk.create_and(m1, x4);
@@ -1149,6 +1170,56 @@ assign M6 = new_n27_ | ~new_n30_;*/
 
     return ntk;
 }
+
+template <typename Ntk>
+mockturtle::names_view<Ntk> b1_r2()
+{
+    mockturtle::names_view<Ntk> ntk{};
+
+    const auto x0 = ntk.create_pi("a");
+    const auto x1 = ntk.create_pi("b");
+    const auto x2 = ntk.create_pi("c");
+    const auto n0 = ntk.create_not(x0);
+    const auto n1 = ntk.create_not(x1);
+    const auto n2 = ntk.create_not(x2);
+
+    const auto a1 = ntk.create_and(x0, x1);
+    const auto na1 = ntk.create_not(a1);
+    const auto a2 = ntk.create_and(n0, n1);
+    const auto na2 = ntk.create_not(a2);
+    const auto a3 = ntk.create_and(na1, na2);
+    //const auto na3 = ntk.create_not(a3);
+    const auto a4 = ntk.create_and(n2, a1);
+    //const auto na4 = ntk.create_not(a4);
+    const auto a5 = ntk.create_and(x2, a2);
+    //const auto na5 = ntk.create_not(a5);
+    const auto a6 = ntk.create_or(a4, a5);
+    //const auto na6 = ntk.create_not(a6);
+
+
+    //const auto o = ntk.create_or(x1, x2);
+
+    ntk.create_po(a3, "cout1");
+    ntk.create_po(a6, "cout2");
+    ntk.create_po(n2, "cout3");
+    ntk.create_po(x2, "cout4");
+
+    /*
+assign new_n8_ = pi0 & pi1;1
+assign new_n9_ = ~pi0 & ~pi1;2
+assign po1 = ~new_n8_ & ~new_n9_;3
+assign new_n11_ = ~pi2 & new_n8_;4
+assign new_n12_ = pi2 & new_n9_;5
+assign po2 = new_n11_ | new_n12_;6
+assign po3 = ~pi2;7
+assign po0 = pi2;8
+endmodule*/
+
+
+    return ntk;
+}
+
+
 
 }  // namespace blueprints
 
