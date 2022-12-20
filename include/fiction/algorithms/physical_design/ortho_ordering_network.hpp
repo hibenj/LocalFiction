@@ -532,7 +532,7 @@ class orthogonal_ordering_network_impl
         // statistical information
         pst.x_size    = layout.x() + 1;
         pst.y_size    = layout.y() + 1;
-        pst.num_gates = layout.num_gates();
+        pst.num_gates = ntk.num_gates();
         pst.num_wires = layout.num_wires();
 
         //std::cout<<"latest X: "<<latest_pos.x<<std::endl;

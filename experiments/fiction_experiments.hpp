@@ -51,13 +51,30 @@ inline constexpr uint64_t fontes18         = 0b000000000000000000000000000000000
 
 inline constexpr uint64_t all              = 0b0000000000000000000000000000000000000000011111111111111111111111;
 
+/* ISCAS benchmarks */
+inline constexpr uint64_t c17_I            = 0b0000000000000000000000000000000000000000100000000000000000000000;
+inline constexpr uint64_t c432             = 0b0000000000000000000000000000000000000001000000000000000000000000;
+inline constexpr uint64_t c499             = 0b0000000000000000000000000000000000000010000000000000000000000000;
+inline constexpr uint64_t c880             = 0b0000000000000000000000000000000000000100000000000000000000000000;
+inline constexpr uint64_t c1355            = 0b0000000000000000000000000000000000001000000000000000000000000000;
+inline constexpr uint64_t c1908            = 0b0000000000000000000000000000000000010000000000000000000000000000;
+inline constexpr uint64_t c2670            = 0b0000000000000000000000000000000000100000000000000000000000000000;
+inline constexpr uint64_t c3540            = 0b0000000000000000000000000000000001000000000000000000000000000000;
+inline constexpr uint64_t c5315            = 0b0000000000000000000000000000000010000000000000000000000000000000;
+inline constexpr uint64_t c6288            = 0b0000000000000000000000000000000100000000000000000000000000000000;
+inline constexpr uint64_t c7552            = 0b0000000000000000000000000000001000000000000000000000000000000000;
+inline constexpr uint64_t ISCAS            = 0b0000000000000000000000000000001111111111100000000000000000000000;
+
 static constexpr const std::array benchmarks {
     "trindade16/mux21", "trindade16/xor2", "trindade16/xnor2", "trindade16/par_gen",
     "trindade16/HA", "trindade16/FA", "trindade16/par_check",
 
     "fontes18/xor", "fontes18/1bitAdderAOIG", "fontes18/t", "fontes18/t_5", "fontes18/c17", "fontes18/b1_r2",
     "fontes18/majority", "fontes18/majority_5_r1", "fontes18/newtag", "fontes18/clpl", "fontes18/xor5_r1",
-    "fontes18/1bitAdderMaj", "fontes18/cm82a_5", "fontes18/2bitAdderMaj", "fontes18/xor5Maj", "fontes18/parity"};
+    "fontes18/1bitAdderMaj", "fontes18/cm82a_5", "fontes18/2bitAdderMaj", "fontes18/xor5Maj", "fontes18/parity",
+
+    "ISCAS85/c17", "ISCAS85/c432", "ISCAS85/c499", "ISCAS85/c880", "ISCAS85/c1355", "ISCAS85/c1908",
+    "ISCAS85/c2670", "ISCAS85/c3540", "ISCAS85/c5315", "ISCAS85/c6288", "ISCAS85/c7552"};
 
 // clang-format on
 // NOLINTEND(readability-identifier-naming)
@@ -90,10 +107,24 @@ std::vector<std::string> fontes18_benchmarks(uint64_t selection = fontes18)
     return result;
 }
 
+std::vector<std::string> ISCAS_benchmarks(uint64_t selection = ISCAS)
+{
+    std::vector<std::string> result{};
+    for (uint64_t i = 23u; i < 24u; ++i)
+    {
+        if (((selection >> i) & 1u) != 0u)
+        {
+            result.emplace_back(benchmarks.at(i));
+        }
+    }
+
+    return result;
+}
+
 std::vector<std::string> all_benchmarks(uint64_t selection = all)
 {
     std::vector<std::string> result{};
-    for (uint64_t i = 0u; i < 23u; ++i)
+    for (uint64_t i = 0u; i < 34u; ++i)
     {
         if (((selection >> i) & 1u) != 0u)
         {

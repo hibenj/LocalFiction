@@ -774,8 +774,8 @@ class orthogonal_sequential_network_impl
         pst.num_gates = layout.num_gates();
         pst.num_wires = layout.num_wires();
 
-        std::cout<<"latest X: "<<latest_pos.x<<std::endl;
-        std::cout<<"latest Y: "<<latest_pos.y<<std::endl;
+        std::cout<<"latest X: "<<pst.x_size<<std::endl;
+        std::cout<<"latest Y: "<<pst.y_size<<std::endl;
 
         return layout;
     }
