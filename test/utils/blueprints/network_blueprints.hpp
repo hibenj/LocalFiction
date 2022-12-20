@@ -1041,7 +1041,7 @@ mockturtle::names_view<Ntk> seq_five()
 
     const auto a3 = ntk.create_and(r4_o, a2);
 
-    const auto a4 = ntk.create_and(r5_o, a3);
+    const auto a4 = ntk.create_and(xo1, a3);
 
     const auto bridge_out_neg_1 = ntk.create_not(r5_o);
     const auto bridge_out_1 = ntk.create_not(bridge_out_neg_1);

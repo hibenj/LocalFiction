@@ -372,7 +372,7 @@ class gate_level_drvs_impl
                     {
                         all_connected = false;
                         log_tile(t, connections_report);
-                        std::cout<<"IN "<<dangling_inp_connection<<" Out "<<dangling_out_connection<<" Tile not properly connected "<<t.x<<t.y<<std::endl;
+                        std::cout<<"IN "<<dangling_inp_connection<<" Out "<<dangling_out_connection<<" Tile not properly connected "<<t.x<<""<<t.y<<std::endl;
                         ++pst.drvs;
                     }
                 }

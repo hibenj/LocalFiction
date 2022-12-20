@@ -124,7 +124,7 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::seq_five<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::seq_three<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
