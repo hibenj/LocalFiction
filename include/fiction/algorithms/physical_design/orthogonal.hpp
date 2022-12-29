@@ -34,6 +34,9 @@
 namespace fiction
 {
 
+/**
+ * Parameters for the orthogonal physical design algorithm.
+ */
 struct orthogonal_physical_design_params
 {
     /**
@@ -383,7 +386,7 @@ class orthogonal_impl
 {
   public:
     orthogonal_impl(const Ntk& src, const orthogonal_physical_design_params& p, orthogonal_physical_design_stats& st) :
-            ntk{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<mockturtle::sequential<technology_network>>>(src)}},
+            ntk{mockturtle::fanout_view{fanout_substitution<mockturtle::names_view<technology_network>>(src)}},
             ps{p},
             pst{st}
     {}
@@ -405,7 +408,6 @@ class orthogonal_impl
 
         // first x-pos to use for gates is 1 because PIs take up the 0th column
         tile<Lyt> latest_pos{1, 0};
-
 
 #if (PROGRESS_BARS)
         // initialize a progress bar
@@ -497,33 +499,19 @@ class orthogonal_impl
                         // n is colored south
                         else if (clr == ctn.color_south)
                         {
-                            // pre2_t is the westwards tile
+                            // make sure pre1_t is the northwards tile and pre2_t is the westwards one
                             if (pre2_t.x > pre1_t.x)
                             {
                                 std::swap(pre1_t, pre2_t);
                             }
 
-                            /**NEW CODE
-                             * !!new south wire option
-                             * **/
-                            // check if pre1_t is now also the northwards tile
-                            if (pre1_t.y < pre2_t.y)
-                            {
-                                // node can be placed on y position of pre2_t
+                            // use larger x position of predecessors
+                            t = {pre1_t.x, latest_pos.y};
 
-                                // use larger x position of predecessors
-                                t = {pre1_t.x, pre2_t.y};
-                                latest_pos.y =pre2_t.y+1;
-                            }
-                            else
-                            {
-                                // use larger x position of predecessors
-                                t = {pre1_t.x, latest_pos.y};
-                                // each 2-input gate has one incoming bent wire
-                                pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t.y + 1}));
+                            // each 2-input gate has one incoming bent wire
+                            pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, t.y + 1}));
 
-                                ++latest_pos.y;
-                            }
+                            ++latest_pos.y;
                         }
                         // n is colored null; corner case
                         else
@@ -598,23 +586,35 @@ class orthogonal_impl
 #endif
             });
 
+        int crossing_count{0};
+        layout.foreach_tile(
+    [&layout, &crossing_count](const auto& t)
+            {
+                const auto nde = layout.get_node(t);
+                if(layout.is_wire(nde))
+                {
+                    if(t.z == 1)
+                    {
+                        ++crossing_count;
+                    }
+                }
+            });
+        std::cout<<"Crossing_Num: "<<crossing_count<<std::endl;
+
         // restore possibly set signal names
         restore_names(ctn.color_ntk, layout, node2pos);
 
         // statistical information
         pst.x_size    = layout.x() + 1;
         pst.y_size    = layout.y() + 1;
-        pst.num_gates = ntk.num_gates();
+        pst.num_gates = layout.num_gates();
         pst.num_wires = layout.num_wires();
-
-        std::cout<<"latest X: "<<latest_pos.x<<std::endl;
-        std::cout<<"latest Y: "<<latest_pos.y<<std::endl;
 
         return layout;
     }
 
   private:
-    mockturtle::topo_view<mockturtle::fanout_view<mockturtle::names_view<mockturtle::sequential<technology_network>>>> ntk;
+    mockturtle::topo_view<mockturtle::fanout_view<mockturtle::names_view<technology_network>>> ntk;
 
     orthogonal_physical_design_params ps;
     orthogonal_physical_design_stats& pst;
@@ -625,10 +625,10 @@ class orthogonal_impl
 }  // namespace detail
 
 /**
- * A scalable placement & routing approach based on orthogonal graph drawing as originally proposed in "Scalable Design
- * for Field-coupled Nanocomputing Circuits" by M. Walter, R. Wille, F. Sill Torres, D. Große, and R. Drechsler in
- * ASP-DAC 2019. A more extensive description can be found in "Design Automation for Field-coupled Nanotechnologies" by
- * M. Walter, R. Wille, F. Sill Torres, and R. Drechsler published by Springer Nature in 2022.
+ * A scalable placement & routing approach based on orthogonal graph drawing as originally proposed in \"Scalable Design
+ * for Field-coupled Nanocomputing Circuits\" by M. Walter, R. Wille, F. Sill Torres, D. Große, and R. Drechsler in
+ * ASP-DAC 2019. A more extensive description can be found in \"Design Automation for Field-coupled Nanotechnologies\"
+ * by M. Walter, R. Wille, F. Sill Torres, and R. Drechsler published by Springer Nature in 2022.
  *
  * Via certain restrictions to the degrees of freedom in FCN physical design, this algorithm achieves a polynomial time
  * complexity. However, these restrictions lead to an overall approximation of optimal layout quality within several
@@ -638,23 +638,24 @@ class orthogonal_impl
  * The imposed restrictions are that the input logic network has to be a 3-graph, i.e., cannot have any node exceeding
  * degree 3 (combined input and output), and that the resulting layout is always 2DDWave-clocked.
  *
- * This algorithm is based on a modification of "Improved orthogonal drawings of 3-graphs" by Therese C. Biedl in CCCG
- * 1996. The original one works for undirected graphs only while this modification respects information flow of directed
- * logic networks. To this end, the edge directions of the logic network directly used instead of relabeling the edges
- * according to its DFS tree, ordering the vertices using topological sorting instead of DFS, and adding an extra
- * placement rule for nodes without predecessors.
+ * This algorithm is based on a modification of \"Improved orthogonal drawings of 3-graphs\" by Therese C. Biedl in
+ * Canadian Conference on Computational Geometry 1996. Biedl's original algorithm works for undirected graphs only while
+ * this modification respects information flow of directed logic networks. To this end, the edge directions of the logic
+ * network directly used instead of relabeling the edges according to its DFS tree, ordering the vertices using
+ * topological sorting instead of DFS, and adding an extra placement rule for nodes without predecessors.
  *
- * The algorithm works in polynomial time O(3|N| + |L|) where |N| is the number of nodes in the given network and |L| is
- * the resulting layout size given by x * y, which approaches (|N|/2)^2 asymptotically.
+ * The algorithm works in polynomial time \f$ O(3|N| + |L|) \f$ where \f$ |N| \f$ is the number of nodes in the given
+ * network and \f$ |L| \f$ is the resulting layout size given by \f$ x \cdot y \f$, which approaches \f$
+ * (\frac{|N|}{2})^2 \f$ asymptotically.
  *
- * May throw an 'high_degree_fanin_exception'.
+ * May throw a high_degree_fanin_exception if `ntk` contains any node with a fan-in larger than 2.
  *
  * @tparam Lyt Desired gate-level layout type.
  * @tparam Ntk Network type that acts as specification.
  * @param ntk The network that is to place and route.
  * @param ps Parameters.
  * @param pst Statistics.
- * @return A gate-level layout of type Lyt that implements ntk as an FCN circuit.
+ * @return A gate-level layout of type `Lyt` that implements `ntk` as an FCN circuit.
  */
 template <typename Lyt, typename Ntk>
 Lyt orthogonal(const Ntk& ntk, orthogonal_physical_design_params ps = {},
@@ -673,11 +674,6 @@ Lyt orthogonal(const Ntk& ntk, orthogonal_physical_design_params ps = {},
 
     orthogonal_physical_design_stats  st{};
     detail::orthogonal_impl<Lyt, Ntk> p{ntk, ps, st};
-
-    /*std::cout<<typeid(Ntk).name()<<std::endl;
-    if(!ntk.is_combinational()){
-        if(mockturtle::has_create_ro_v<Ntk>){std::cout<<"Ntk does not implement the create_ro function"<<std::endl;}
-    }*/
 
     auto result = p.run();
 

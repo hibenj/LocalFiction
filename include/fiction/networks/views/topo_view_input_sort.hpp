@@ -245,7 +245,10 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
             [this](auto n)
             {
                 if (this->visited(n) != this->trav_id())
-                {topo_order.push_back(n);}
+                {
+                    topo_order.push_back(n);
+                    this->set_visited(n, this->trav_id());
+                }
             });
 
         if (start_signal)
@@ -257,13 +260,21 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
          else
          {
 
-             this->incr_trav_id();
+             /*this->incr_trav_id();
              uint32_t reset_trav_id = this->trav_id();
              this->incr_trav_id();
              mockturtle::detail::foreach_element( topo_order.begin()+num_c, topo_order.begin()+num_c+num_p+num_r,
                                                  [this](auto is){topo_wait.push_back(is);});
              push_iter = 0;
-             create_rest_topo(topo_wait[push_iter], reset_trav_id);
+             create_topo_rec(topo_wait[push_iter], reset_trav_id);*/
+
+             Ntk::foreach_co( [this]( auto f ) {
+                                 /* node was already visited */
+                                 if ( this->visited( this->get_node( f ) ) == this->trav_id() )
+                                     return;
+
+                                 create_topo_rec( this->get_node( f ) );
+                             } );
          }
     }
 
@@ -294,9 +305,10 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
 
     void create_rest_topo(node const& n, uint32_t tid)
     {
+        ++overflow_protector;
         bool my_bool = false;
 
-        const auto fe = fanins(my_ntk, n);
+        const auto& fe = fanins(my_ntk, n);
         my_bool = std::all_of(fe.fanin_nodes.begin(), fe.fanin_nodes.end(), [&](const auto& fin_inp)
                                     {return this->visited(fin_inp) == this->trav_id();});
         bool is_seq = false;
@@ -327,17 +339,15 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
             ++push_iter;
         }
 
-        if(!topo_wait.empty()){
+        if(!topo_wait.empty() && overflow_protector != 1000){
             create_rest_topo(topo_wait[push_iter], tid);
         }
     }
 
     void get_fo_network(node const& n)
     {
-        std::cout<<"Hi";
         my_ntk.foreach_fanout(n,
                         [&](const auto& fon) {
-                                  std::cout<<"Hi";
                                   node high_fanout = fon;
                             if (my_ntk.is_inv(fon))
                             {
@@ -378,8 +388,10 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
 
                                       if (my_ntk.is_fanout(output_node[0])){
                                           is_fan_out = true;
-                                          topo_order.push_back(n);
-                                          this->set_visited(n, this->trav_id());
+                                          /**New ordering don't just push FOs back**/
+                                          /**Only push back related PIs**/
+                                          /*topo_order.push_back(n);
+                                          this->set_visited(n, this->trav_id());*/
                                           node safe_node = output_node[0];
                                           output_node.clear();
                                           my_ntk.foreach_fanout(safe_node,
@@ -399,9 +411,12 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                                                              });
                                       }
 
-                                      /*The Fan-out has to be connected to 1.Fan-out nodes of Inputs or 2.Inputs*/
-                                      /*Has to be rewritten for Inputs with Fan-outs higher than two*/
+                                      /*The Fan-out has to be connected to One PI or two PIs*/
+                                      /*A PI has to e connected to another PI*/
+                                      /**Ranking: FOs with 2PIs, FOs with 1PI, PI with PI, PIs connected to MAJ, Rest(visited in the main function)**/
                                       bool all_inputs = false;
+                                      bool already_one_PI = false;
+                                      node first_PI;
                                       for(int i = 0; i <output_node.size(); ++i)
                                       {
                                           my_ntk.foreach_fanin(
@@ -415,40 +430,9 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                                                       const auto fis_inv = fanins(my_ntk, fin_inp);
                                                       fin_inp            = fis_inv.fanin_nodes[0];
                                                   }
-                                                  /*1*/
-                                                  if (my_ntk.fanout_size(fin_inp) >= 2)
+                                                  if (fin_inp != n)
                                                   {
-                                                      my_ntk.foreach_fanin(
-                                                          fin_inp,
-                                                          [&](const auto& fin)
-                                                          {
-                                                              auto fin_inp_sec = my_ntk.get_node(fin);
-                                                              /*Ignore Inverters*/
-                                                              if (my_ntk.is_inv(fin_inp_sec))
-                                                              {
-                                                                  const auto fis_inv = fanins(my_ntk, fin_inp_sec);
-                                                                  fin_inp_sec        = fis_inv.fanin_nodes[0];
-                                                              }
-                                                              if(fin_inp_sec != n){
-                                                                  if (my_ntk.is_ci(fin_inp_sec))
-                                                                  {
-                                                                      all_inputs = true;
-                                                                  }
-                                                                  else
-                                                                  {
-                                                                      if (this->visited(n) != this->trav_id()){
-                                                                          second_wait.push_back(n);
-                                                                          this->set_visited(n, this->trav_id());
-                                                                      }
-                                                                  }
-
-                                                              }
-
-                                                          });
-                                                  }
-                                                  /*2*/
-                                                  else if (fin_inp != n)
-                                                  {
+                                                      /**Majority gates are ranked fourth**/
                                                       if (const auto fc = fanins(my_ntk, fon); my_ntk.is_maj(fon) && fc.fanin_nodes.size()>2)
                                                       {
                                                           if (this->visited(n) != this->trav_id())
@@ -461,32 +445,60 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
                                                       {
                                                           if (is_fan_out)
                                                           {
-                                                              if (this->visited(fin_inp) != this->trav_id())
+                                                              /**When a Fanout is connected to a PI, it can be one or two PIs**/
+                                                              if(already_one_PI)
                                                               {
-                                                                  wait.insert(wait.begin(), fin_inp);
-                                                                  this->set_visited(fin_inp, this->trav_id());
+                                                                  /**FO has two incoming PIs**/
+                                                                  /**Push PI and PI stored in first_PI**/
+                                                                  auto check_n = wait[wait.size()-2];
+                                                                  wait.erase(wait.end()-2);
+                                                                  if(check_n == n)
+                                                                  {
+                                                                      topo_order.push_back(n);
+                                                                      this->set_visited(n, this->trav_id());
+                                                                  }
+                                                                  else
+                                                                      assert(false);
+
+                                                                  if (this->visited(fin_inp) != this->trav_id())
+                                                                  {
+                                                                      topo_order.push_back(fin_inp);
+                                                                      this->set_visited(fin_inp, this->trav_id());
+                                                                  }
+                                                                  already_one_PI = false;
+
+                                                              }
+                                                              else
+                                                              {
+                                                                  /**FO has min one incoming PI**/
+                                                                  /**Store PI in first_PI, for the case if FO has two incoming PIs**/
+                                                                  if (this->visited(n) != this->trav_id())
+                                                                  {
+                                                                      wait.push_back(n);
+                                                                      this->set_visited(n, this->trav_id());
+                                                                  }
+                                                                  if (this->visited(fin_inp) != this->trav_id())
+                                                                  {
+                                                                      wait.push_back(fin_inp);
+                                                                      this->set_visited(fin_inp, this->trav_id());
+                                                                  }
+                                                                  already_one_PI = true;
+                                                                  first_PI       = fin_inp;
                                                               }
                                                           }
                                                           else
                                                           {
+                                                              /**When a PI is connected to a PI it is ranked third**/
                                                               if (this->visited(n) != this->trav_id())
                                                               {
-                                                                  wait.push_back(n);
+                                                                  second_wait.push_back(n);
                                                                   this->set_visited(n, this->trav_id());
                                                               }
                                                               if (this->visited(fin_inp) != this->trav_id())
                                                               {
-                                                                  wait.push_back(fin_inp);
+                                                                  second_wait.push_back(fin_inp);
                                                                   this->set_visited(fin_inp, this->trav_id());
                                                               }
-                                                          }
-                                                      }
-                                                      else
-                                                      {
-                                                          if (this->visited(n) != this->trav_id())
-                                                          {
-                                                              second_wait.push_back(n);
-                                                              this->set_visited(n, this->trav_id());
                                                           }
                                                       }
                                                   }
@@ -516,6 +528,8 @@ class topo_view_input_sort<Ntk, false> : public mockturtle::immutable_view<Ntk>
     uint32_t num_p;
     uint32_t num_c = 0u;
     uint32_t num_r = 0u;
+
+    uint32_t overflow_protector{0};
 
     unsigned int push_iter;
     node next_node;
