@@ -610,6 +610,8 @@ class orthogonal_impl
         pst.num_gates = layout.num_gates();
         pst.num_wires = layout.num_wires();
 
+        std::cout<<"ntk.num_gates()"<<ntk.num_gates()<<std::endl;
+
         return layout;
     }
 

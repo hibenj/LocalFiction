@@ -1,6 +1,6 @@
 include_directories(catch2 .)
 
-set(DEFINE_TEST_HEADER test.cpp algorithms/physical_design/ortho_new.cpp networks/views/topo_view_input_sort.cpp networks/views/input_sort_view.cpp algorithms/network_transformation/fanout_inverter_balancing.cpp algorithms/network_transformation/fo_inv_balancing.cpp networks/views/reverse_view.cpp algorithms/physical_design/ortho_sequential.cpp algorithms/physical_design/ortho_ordering_network.cpp algorithms/physical_design/ortho_majority_gates_network.cpp algorithms/physical_design/ortho_sequential_network.cpp)
+set(DEFINE_TEST_HEADER test.cpp algorithms/physical_design/ortho_new.cpp networks/views/topo_view_input_sort.cpp networks/views/input_sort_view.cpp algorithms/network_transformation/fanout_inverter_balancing.cpp algorithms/network_transformation/fo_inv_balancing.cpp networks/views/reverse_view.cpp algorithms/physical_design/ortho_sequential.cpp algorithms/physical_design/ortho_ordering_network.cpp algorithms/physical_design/ortho_majority_gates_network.cpp algorithms/physical_design/ortho_sequential_network.cpp utils/blueprints/sequential_blueprints.hpp utils/blueprints/trindade16_blueprints.hpp utils/blueprints/fontes18_blueprints.hpp utils/blueprints/ISCAS85_blueprints.hpp)
 file(GLOB_RECURSE FILENAMES */*.cpp)
 list(FILTER SOURCES EXCLUDE REGEX "catch2/*")
 

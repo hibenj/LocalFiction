@@ -9,6 +9,10 @@
 #include "fiction/utils/debug/network_writer.hpp"
 #include "mockturtle/generators/random_network.hpp"
 #include "utils/blueprints/network_blueprints.hpp"
+#include "utils/blueprints/sequential_blueprints.hpp"
+#include "utils/blueprints/trindade16_blueprints.hpp"
+#include "utils/blueprints/fontes18_blueprints.hpp"
+#include "utils/blueprints/ISCAS85_blueprints.hpp"
 #include "utils/equivalence_checking_utils.hpp"
 
 #include <fiction/algorithms/physical_design/apply_gate_library.hpp>
@@ -44,7 +48,7 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::random_3<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::ISCAS_c1908<mockturtle::names_view<technology_network>>();
 
     //fiction::debug::write_dot_network(mux21, "ortho_inv_blc");
 
@@ -52,7 +56,7 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 
     orthogonal_physical_design_stats stats{};
 
-    const auto layout = orthogonal_majority_network<gate_layout>(mux21, {}, &stats);
+    const auto layout = orthogonal_ordering_network<gate_layout>(mux21, {}, &stats);
 
     fiction::debug::write_dot_layout(layout);
 
@@ -71,7 +75,10 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 
     // PO names
     //CHECK(layout.get_output_name(0) == "f");
-    std::cout << "Size: " <<(stats.x_size-1) * (stats.y_size-1) << std::endl;
+    std::cout << "PROCESSING ORDERING_NW "<< std::endl;
+    std::cout << "Size: " <<(stats.x_size) * (stats.y_size) << std::endl;
+    std::cout << "w: " <<(stats.x_size)<< std::endl;
+    std::cout << "h: " <<(stats.y_size) << std::endl;
     std::cout << "Time: " << mockturtle::to_seconds(stats.time_total) << std::endl;
     std::cout << "Num Gates: "  << stats.num_gates << std::endl;
     std::cout << "Num Wires: " << stats.num_wires<< std::endl;
@@ -93,14 +100,17 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::TEST_maj_one_buf<mockturtle::names_view<mockturtle::aig_network>>();
+    auto mux21 = blueprints::ISCAS_c1908<mockturtle::names_view<technology_network>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
 
     const auto layout = orthogonal<gate_layout>(mux21, {}, &stats);
 
-    std::cout << "Size: " <<(stats.x_size-1) * (stats.y_size-1) << std::endl;
+    std::cout << "PROCESSING ORTHO "<< std::endl;
+    std::cout << "Size: " <<(stats.x_size) * (stats.y_size) << std::endl;
+    std::cout << "w: " <<(stats.x_size)<< std::endl;
+    std::cout << "h: " <<(stats.y_size) << std::endl;
     std::cout << "Time: " << mockturtle::to_seconds(stats.time_total) << std::endl;
     std::cout << "Num Gates: "  << stats.num_gates << std::endl;
     std::cout << "Num Wires: " << stats.num_wires<< std::endl;
@@ -132,7 +142,7 @@ TEST_CASE("New Ortho testing", "[ortho-testing]")
 
     orthogonal_physical_design_stats stats{};
 
-    auto layout = orthogonal_majority_network<gate_layout>(mux21, {}, &stats);
+    auto layout = orthogonal_ordering_network<gate_layout>(mux21, {}, &stats);
 
     gate_level_drvs(layout);
 
@@ -155,11 +165,11 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::TEST_maj_two_buf<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    auto mux21 = blueprints::b11_opt<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
     mux21.set_network_name("mux21");
     orthogonal_physical_design_stats stats{};
 
-    auto layout = orthogonal_new<gate_layout>(mux21, {}, &stats);
+    auto layout = orthogonal_sequential_network<gate_layout>(mux21, {}, &stats);
 
     gate_level_drvs(layout);
 

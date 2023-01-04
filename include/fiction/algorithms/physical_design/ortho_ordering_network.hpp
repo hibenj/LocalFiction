@@ -498,7 +498,6 @@ class orthogonal_ordering_network_impl
                     //++po_tile.y;
                     layout.resize({latest_pos.x, latest_pos.y-1, 1});
                 }
-
                 // check if PO position is located at the border
                 if (layout.is_at_eastern_border({po_tile.x + 1, po_tile.y}))
                 {
@@ -529,11 +528,28 @@ class orthogonal_ordering_network_impl
         // restore possibly set signal names
         restore_names(ctn.color_ntk, layout, node2pos);
 
+        int crossing_count{0};
+        layout.foreach_tile(
+            [&layout, &crossing_count](const auto& t)
+            {
+                const auto nde = layout.get_node(t);
+                if(layout.is_wire(nde))
+                {
+                    if(t.z == 1)
+                    {
+                        ++crossing_count;
+                    }
+                }
+            });
+        std::cout<<"Crossing_Num: "<<crossing_count<<std::endl;
+
         // statistical information
         pst.x_size    = layout.x() + 1;
         pst.y_size    = layout.y() + 1;
-        pst.num_gates = ntk.num_gates();
+        pst.num_gates = layout.num_gates();
         pst.num_wires = layout.num_wires();
+
+        std::cout<<"ntk.num_gates()"<<ntk.num_gates()<<std::endl;
 
         //std::cout<<"latest X: "<<latest_pos.x<<std::endl;
         //std::cout<<"latest Y: "<<latest_pos.y<<std::endl;
