@@ -11,6 +11,46 @@ namespace blueprints
 {
 
 template <typename Ntk>
+mockturtle::names_view<Ntk> io_network()
+{
+    mockturtle::names_view<Ntk> ntk{};
+
+    const auto a = ntk.create_pi("a");
+    const auto b = ntk.create_pi("b");
+    const auto c = ntk.create_pi("c");
+
+    const auto m = ntk.create_and(a, b);
+
+    ntk.create_po(m, "f");
+    ntk.create_po(c, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+mockturtle::names_view<Ntk> io_inv_network()
+{
+    mockturtle::names_view<Ntk> ntk{};
+
+    const auto a = ntk.create_pi("a");
+    const auto b = ntk.create_pi("b");
+    const auto c = ntk.create_pi("c");
+
+    const auto m = ntk.create_and(a, b);
+    const auto nc = ntk.create_not(c);
+    const auto nnc = ntk.create_not(nc);
+
+    ntk.create_po(m, "f");
+    ntk.create_po(nnc, "f");
+    ntk.create_po(nnc, "f");
+    ntk.create_po(nnc, "f");
+    ntk.create_po(nnc, "f");
+    ntk.create_po(nnc, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
 mockturtle::names_view<Ntk> maj1_network()
 {
     mockturtle::names_view<Ntk> ntk{};

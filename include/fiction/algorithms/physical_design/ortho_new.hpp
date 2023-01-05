@@ -357,6 +357,8 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
     bool node_fo = false;
     bool inv_flag = false;
 
+    bool po_flag = false;
+
     std::vector<typename Ntk::node> new_output_node;
     mockturtle::node<Ntk> safe_node;
 
@@ -390,10 +392,17 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                 nd,
                 [&](const auto& fon)
                 {
+                    if (nd == 156)
+                    {
+                        std::cout<<"Halo"<<std::endl;
+                    }
+
                     fo_node = false;
                     node_pi = false;
                     node_fo = false;
                     inv_flag = false;
+                    po_flag = false;
+
                     /*Ignore Inverters*/
                     new_output_node.clear();
                     new_output_node.push_back(fon);
@@ -410,7 +419,7 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                                                              [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
                                            });
                     }
-                    if (ntk.is_fanout(new_output_node[0])){
+                    if (ntk.is_fanout(new_output_node[0]) && ntk.fanout_size(new_output_node[0]) >= 2){
                         safe_node = new_output_node[0];
                         fo_node = true;
 
@@ -426,13 +435,25 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                                                if (ntk.is_inv(fon))
                                                {
                                                    inv_flag = true;
+
+                                                   if(ntk.is_po(fon))
+                                                   {
+                                                       po_flag = true;
+                                                   }
+
                                                    /*Inverter Flag*/
                                                    ntk.foreach_fanout(fon,
                                                                       [&](const auto& fon_inv) {new_output_node.insert(new_output_node.begin(), fon_inv);});
                                                }
-                                               else
+                                               else{
+                                                   if(ntk.is_po(fon))
+                                                   {
+                                                       po_flag = true;
+                                                   }
                                                    /*COLOR NODE SOUTH AND COLOR THE INCOMING EDGES OF THIS NODE ALSO SOUTH*/
                                                    new_output_node.push_back(fon);
+                                               }
+
                                                /*COLOR THE OTHER OUTGOING EDGE OF THE FAN-OUT EAST*/
                                                /*IF the node is an inverter color next edge also east*/
                                            });
@@ -443,7 +464,7 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                     bool already_painted = false;
                     bool all_inputs = false;
 
-                    for(int i = 0; i <new_output_node.size(); ++i)
+                    /*for(int i = 0; i <new_output_node.size(); ++i)
                     {
 
                         if(ntk.is_maj(new_output_node[i]))
@@ -467,7 +488,7 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                             }
 
                         }
-                    }
+                    }*/
 
                     for(int i = 0; i <new_output_node.size(); ++i)
                     {
@@ -498,7 +519,7 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                                     fin_inp            = fis_inv.fanin_nodes[0];
                                 }
                                 /*1*/
-                                if (ntk.fanout_size(fin_inp) >= 2)
+                                if (ntk.fanout_size(fin_inp) >= 2 && ntk.is_fanout(fin_inp) && !po_flag)
                                 {
                                     //For coloring fanouts south
                                     /*auto color = ctn.color_south;
@@ -575,6 +596,16 @@ coloring_container<Ntk> new_east_south_edge_coloring(const Ntk& ntk) noexcept
                                             }
                                         });
                                 }
+                                /*else if (po_flag)
+                                {
+                                    auto color = ctn.color_south;
+                                    const auto finc_other = fanin_edges(ctn.color_ntk, new_output_node[0]);
+                                    std::for_each(finc_other.fanin_edges.cbegin(), finc_other.fanin_edges.cend(),
+                                                  [&ctn, &color](const auto& fe) { paint_edge_if(ctn, fe, color); });
+                                    paint_if(ctn, new_output_node[0], color);
+
+                                    already_painted = true;
+                                }*/
                                 /*2*/
                                 else if (ntk.is_ci(fin_inp) == true && fin_inp != nd)
                                 {

@@ -13,6 +13,7 @@
 #include "utils/blueprints/trindade16_blueprints.hpp"
 #include "utils/blueprints/fontes18_blueprints.hpp"
 #include "utils/blueprints/ISCAS85_blueprints.hpp"
+#include "utils/blueprints/EPFL_blueprints.hpp"
 #include "utils/equivalence_checking_utils.hpp"
 
 #include <fiction/algorithms/physical_design/apply_gate_library.hpp>
@@ -48,7 +49,7 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::ISCAS_c1908<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::EPFL_cavlc<mockturtle::names_view<technology_network>>();
 
     //fiction::debug::write_dot_network(mux21, "ortho_inv_blc");
 
@@ -100,7 +101,7 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::ISCAS_c1908<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::EPFL_max<mockturtle::names_view<technology_network>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};

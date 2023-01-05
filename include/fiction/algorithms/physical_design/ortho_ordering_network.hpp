@@ -67,6 +67,23 @@ class orthogonal_ordering_network_impl
         // initialize a progress bar
         mockturtle::progress_bar bar{static_cast<uint32_t>(ctn.color_ntk.size()), "[i] arranging layout: |{0}|"};
 #endif
+        //Find multi_output_nodes
+        std::vector<mockturtle::node<Ntk>> my_out_nodes;
+        std::vector<mockturtle::node<Ntk>> multi_out_nodes;
+        ctn.color_ntk.foreach_po(
+            [&](const auto& po){
+                const auto n_s = node2pos[po];
+
+                tile<Lyt> po_tile{};
+
+                if (std::find(my_out_nodes.begin(), my_out_nodes.end(), po) != my_out_nodes.end())
+                {
+                    multi_out_nodes.push_back(po);
+                }
+                my_out_nodes.push_back(po);
+       });
+
+
         //This is only for additional coloring, if the conditional coloring isnt correct
         ntk.foreach_node(
             [&, this](const auto& n, [[maybe_unused]] const auto i)
@@ -91,7 +108,10 @@ class orthogonal_ordering_network_impl
                                 ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_east);
                                 recolored_fanouts.push_back(fos[1]);
                             }else
+                            {
                                 ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                            }
+
                         }
                         if(std::all_of(fos.cbegin(), fos.cend(),
                                         [&](const auto& fo) { return ctn.color_ntk.color(fo) == ctn.color_east; }))
@@ -178,6 +198,34 @@ class orthogonal_ordering_network_impl
                             ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
                         }
                     }}});
+
+        //This is only for additional coloring, if the conditional coloring isnt correct
+        ntk.foreach_node(
+            [&, this](const auto& n, [[maybe_unused]] const auto i)
+            {
+                if(const auto fc = fanins(ctn.color_ntk, n); fc.fanin_nodes.size() == 1)
+                {
+                    if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_null)
+                    {
+                        auto fanout_node = fc.fanin_nodes[0];
+                        auto fos = fanouts(ctn.color_ntk, fanout_node);
+                        const auto clr_fo_0 = ctn.color_ntk.color(fos[0]);
+                        const auto clr_fo_1 = ctn.color_ntk.color(fos[1]);
+                        if(clr_fo_0 == ctn.color_null)
+                        {
+                            //switch the colors
+                            ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, ctn.color_null);
+                            ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[0]}, clr_fo_1);
+                        }
+                        if(clr_fo_1 == ctn.color_null)
+                        {
+                            //switch the colors
+                            ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[0]}, ctn.color_null);
+                            ctn.color_ntk.paint(mockturtle::node<Ntk>{fos[1]}, clr_fo_0);
+                        }
+                    }
+                }
+            });
 
         //Start of the algorithm
         ntk.foreach_node(
@@ -461,8 +509,10 @@ class orthogonal_ordering_network_impl
                     }
                     if (ctn.color_ntk.is_po(n))
                     {
-                        if (!is_eastern_po_orientation_available(ctn, n))
-                        {++latest_pos.y;}
+                        if (!is_eastern_po_orientation_available(ctn, n) || std::find(multi_out_nodes.begin(), multi_out_nodes.end(), n) != multi_out_nodes.end())
+                        {
+                            ++latest_pos.y;
+                        }
                     }
                 }
 
@@ -476,14 +526,21 @@ class orthogonal_ordering_network_impl
         //Since the layout size is only known after placing all gates, the POs have to be placed after the main algorithm
         //
         //
+        bool multi_out_node = false;
+        std::vector<mockturtle::node<Ntk>> out_nodes;
         ctn.color_ntk.foreach_po(
             [&](const auto& po){
                 const auto n_s = node2pos[po];
 
                 tile<Lyt> po_tile{};
 
+                if(std::find(out_nodes.begin(), out_nodes.end(), po) != out_nodes.end())
+                {
+                    multi_out_node = true;
+                }
+
                 // determine PO orientation
-                if (is_eastern_po_orientation_available(ctn, po))
+                if (is_eastern_po_orientation_available(ctn, po) && !multi_out_node)
                 {
                     po_tile = static_cast<tile<Lyt>>(n_s);
                     //++po_tile.x;
@@ -499,7 +556,7 @@ class orthogonal_ordering_network_impl
                     layout.resize({latest_pos.x, latest_pos.y-1, 1});
                 }
                 // check if PO position is located at the border
-                if (layout.is_at_eastern_border({po_tile.x + 1, po_tile.y}))
+                if (layout.is_at_eastern_border({po_tile.x + 1, po_tile.y}) && !multi_out_node)
                 {
                     ++po_tile.x;
                     layout.create_po(n_s,
@@ -520,7 +577,10 @@ class orthogonal_ordering_network_impl
                                          ctn.color_ntk.get_output_name(po_counter++) :
                                          fmt::format("po{}", po_counter++),
                                      po_tile);
+                    multi_out_node = false;
                 }
+
+                out_nodes.push_back(po);
                 //std::cout<<po<<"PO plaziert auf"<<"X:"<<po_tile.x<<"Y:"<<po_tile.y<<std::endl;
             });
         /**********************************************************End: Place Pos***************************************************************/

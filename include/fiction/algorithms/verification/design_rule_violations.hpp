@@ -402,6 +402,7 @@ class gate_level_drvs_impl
                         all_wire_crossings = false;
                         log_tile(t, crossing_report);
                         ++pst.drvs;
+                        std::cout<<"Tile not properly connected "<<t.x<<""<<t.y<<std::endl;
                     }
                 }
             });
