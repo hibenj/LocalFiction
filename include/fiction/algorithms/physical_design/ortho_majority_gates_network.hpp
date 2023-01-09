@@ -65,6 +65,8 @@ class orthogonal_majority_network_impl
 
         std::vector<std::pair<int, int>> resolve_columns;
 
+        std::vector<mockturtle::node<Ntk>> recolored_fos;
+
 #if (PROGRESS_BARS)
         // initialize a progress bar
         mockturtle::progress_bar bar{static_cast<uint32_t>(ctn.color_ntk.size()), "[i] arranging layout: |{0}|"};
@@ -206,10 +208,10 @@ class orthogonal_majority_network_impl
                             }
                         }*/
                         /**********************************************************************************************/
-
                         // Majority gates placed south are just wired south and then placed east (this is due to the properties of the majority delay network)
                         if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_null)
                         {
+
                             if (auto fos = fanouts(ctn.color_ntk, pre1);
                                 ctn.color_ntk.is_fanout(pre1) && fos.size() > 1)
                             {
@@ -227,11 +229,25 @@ class orthogonal_majority_network_impl
                                     pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, latest_pos.y + 1}));
                                     ++latest_pos.y;
                                 }
-                                else
+                                else if(conflicting_colors_one == ctn.color_south)
                                 {
                                     pre1_t =
                                         static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
                                     ++latest_pos.x;
+                                }
+                                else
+                                {
+                                    if(!(std::find(recolored_fos.begin(), recolored_fos.end(), pre1) != recolored_fos.end()))
+                                    {
+                                        pre1_t = static_cast<tile<Lyt>>(wire_east(layout, pre1_t, {latest_pos.x + 1, pre1_t.y}));
+                                        ++latest_pos.x;
+                                        recolored_fos.push_back(pre1);
+                                    }
+                                    else
+                                    {
+                                        pre1_t = static_cast<tile<Lyt>>(wire_south(layout, pre1_t, {pre1_t.x, latest_pos.y + 1}));
+                                        ++latest_pos.y;
+                                    }
                                 }
                             }
                             if (auto fos = fanouts(ctn.color_ntk, pre2);
@@ -251,11 +267,25 @@ class orthogonal_majority_network_impl
                                     pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, latest_pos.y + 1}));
                                     ++latest_pos.y;
                                 }
-                                else
+                                else if(conflicting_colors_one == ctn.color_south)
                                 {
                                     pre2_t =
                                         static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
                                     ++latest_pos.x;
+                                }
+                                else
+                                {
+                                    if(!(std::find(recolored_fos.begin(), recolored_fos.end(), pre2) != recolored_fos.end()))
+                                    {
+                                        pre2_t = static_cast<tile<Lyt>>(wire_east(layout, pre2_t, {latest_pos.x + 1, pre2_t.y}));
+                                        ++latest_pos.x;
+                                        recolored_fos.push_back(pre2);
+                                    }
+                                    else
+                                    {
+                                        pre2_t = static_cast<tile<Lyt>>(wire_south(layout, pre2_t, {pre2_t.x, latest_pos.y + 1}));
+                                        ++latest_pos.y;
+                                    }
                                 }
                             }
                             if (auto fos = fanouts(ctn.color_ntk, pre3);
@@ -275,11 +305,25 @@ class orthogonal_majority_network_impl
                                     pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, latest_pos.y + 1}));
                                     ++latest_pos.y;
                                 }
-                                else
+                                else if(conflicting_colors_one == ctn.color_south)
                                 {
                                     pre3_t =
                                         static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {latest_pos.x + 1, pre3_t.y}));
                                     ++latest_pos.x;
+                                }
+                                else
+                                {
+                                    if(!(std::find(recolored_fos.begin(), recolored_fos.end(), pre3) != recolored_fos.end()))
+                                    {
+                                        pre3_t = static_cast<tile<Lyt>>(wire_east(layout, pre3_t, {latest_pos.x + 1, pre3_t.y}));
+                                        ++latest_pos.x;
+                                        recolored_fos.push_back(pre3);
+                                    }
+                                    else
+                                    {
+                                        pre3_t = static_cast<tile<Lyt>>(wire_south(layout, pre3_t, {pre3_t.x, latest_pos.y + 1}));
+                                        ++latest_pos.y;
+                                    }
                                 }
                             }
                         }
@@ -343,10 +387,10 @@ class orthogonal_majority_network_impl
                                         // For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
                                         pre3_t = static_cast<tile<Lyt>>(
                                             wire_east(layout, pre3_t, {latest_pos.x + 1, pre3_t.y}));
-                                        const auto                uno                   = pre3_t.y + 1;
+                                        /*const auto                uno                   = pre3_t.y + 1;
                                         const auto                due                   = pre3_t.x;
                                         const std::pair<int, int> row_resolve_to_column = {uno, due};
-                                        resolve_rows.push_back(row_resolve_to_column);
+                                        resolve_rows.push_back(row_resolve_to_column);*/
 
                                         auto pre_clock = layout.get_clock_number({pre3_t});
                                         for (int iter = maj_buf[path_n]; iter > 0; --iter)
@@ -535,8 +579,18 @@ class orthogonal_majority_network_impl
 
                         node2pos[n] = static_cast<mockturtle::signal<Lyt>>(t);
 
-                        std::cout<<"Color MAj gate: "<<(ctn.color_ntk.color(n))<<std::endl;
-
+                        if (const auto clr = ctn.color_ntk.color(n); clr == ctn.color_east)
+                        {
+                            std::cout<<"Color MAj gate: "<<"east"<<std::endl;
+                        }
+                        else if (clr == ctn.color_south)
+                        {
+                            std::cout<<"Color MAj gate: "<<"south"<<std::endl;
+                        }
+                        else
+                        {
+                            std::cout<<"Color MAj gate: "<<"null"<<std::endl;
+                        }
 
                         latest_pos.x = t.x + 1;
                         latest_pos.y = t.y + 2;
@@ -834,7 +888,7 @@ class orthogonal_majority_network_impl
                                     {
                                         //For this case we need RESOLVE for nodes getting wired east but are blocked by the Buffer
                                         const auto uno = pre2_t.x + 1;
-                                        const auto due = pre2_t.y;
+                                        const auto due = pre2_t.y + 1;
                                         const std::pair<int, int> column_resolve_to_row = {uno, due};
                                         resolve_columns.push_back(column_resolve_to_row);
 
@@ -938,6 +992,11 @@ class orthogonal_majority_network_impl
             [&](const auto& po){
                 const auto n_s = node2pos[po];
 
+                if(po ==187)
+                {
+                    std::cout<<"out: "<<po<<std::endl;
+                }
+
                 tile<Lyt> po_tile{};
 
                 // determine PO orientation
@@ -986,6 +1045,9 @@ class orthogonal_majority_network_impl
             });
         /**********************************************************End: Place Pos***************************************************************/
 
+        // restore possibly set signal names
+        restore_names(ctn.color_ntk, layout, node2pos);
+
         int crossing_count{0};
         layout.foreach_tile(
             [&layout, &crossing_count](const auto& t)
@@ -1001,17 +1063,16 @@ class orthogonal_majority_network_impl
             });
         std::cout<<"Crossing_Num: "<<crossing_count<<std::endl;
 
-        // restore possibly set signal names
-        restore_names(ctn.color_ntk, layout, node2pos);
-
         // statistical information
         pst.x_size    = layout.x() + 1;
         pst.y_size    = layout.y() + 1;
         pst.num_gates = layout.num_gates();
         pst.num_wires = layout.num_wires();
 
-        std::cout<<"latest X: "<<latest_pos.x<<std::endl;
-        std::cout<<"latest Y: "<<latest_pos.y<<std::endl;
+        std::cout<<"ntk.num_gates()"<<ntk.num_gates()<<std::endl;
+
+        //std::cout<<"latest X: "<<latest_pos.x<<std::endl;
+        //std::cout<<"latest Y: "<<latest_pos.y<<std::endl;
 
         return layout;
     }

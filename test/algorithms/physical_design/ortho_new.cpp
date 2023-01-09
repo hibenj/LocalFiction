@@ -50,7 +50,7 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::maj4_network<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::TEST_maj_two_buf<mockturtle::names_view<technology_network>>();
 
     //fiction::debug::write_dot_network(mux21, "ortho_inv_blc");
 
@@ -63,9 +63,9 @@ TEST_CASE("Orthogonal mux", "[orthog]")
     fiction::debug::write_dot_layout(layout);
 
 
-    /*const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout);
+    const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout);
 
-    write_qca_layout_svg(cell_level_lyt, "mux21_cell_lvl_lyt.svg");*/
+    write_qca_layout_svg(cell_level_lyt, "maj2buf_cell_lvl_lyt.svg");
 
     // network name
     //CHECK(layout.get_layout_name() == "mux21");
@@ -102,7 +102,7 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::random_6<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::random_7<mockturtle::names_view<technology_network>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
