@@ -14,6 +14,7 @@
 #include "utils/blueprints/fontes18_blueprints.hpp"
 #include "utils/blueprints/ISCAS85_blueprints.hpp"
 #include "utils/blueprints/EPFL_blueprints.hpp"
+#include "utils/blueprints/majority_blueprints.hpp"
 #include "utils/equivalence_checking_utils.hpp"
 
 #include <fiction/algorithms/physical_design/apply_gate_library.hpp>
@@ -49,7 +50,7 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::EPFL_cavlc<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::maj4_network<mockturtle::names_view<technology_network>>();
 
     //fiction::debug::write_dot_network(mux21, "ortho_inv_blc");
 
@@ -57,7 +58,7 @@ TEST_CASE("Orthogonal mux", "[orthog]")
 
     orthogonal_physical_design_stats stats{};
 
-    const auto layout = orthogonal_ordering_network<gate_layout>(mux21, {}, &stats);
+    const auto layout = orthogonal_majority_network<gate_layout>(mux21, {}, &stats);
 
     fiction::debug::write_dot_layout(layout);
 
@@ -101,12 +102,12 @@ TEST_CASE("New Ortho mux", "[ortho-new]")
 {
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
 
-    auto mux21 = blueprints::EPFL_max<mockturtle::names_view<technology_network>>();
+    auto mux21 = blueprints::random_6<mockturtle::names_view<technology_network>>();
     mux21.set_network_name("mux21");
 
     orthogonal_physical_design_stats stats{};
 
-    const auto layout = orthogonal<gate_layout>(mux21, {}, &stats);
+    const auto layout = orthogonal_majority_network<gate_layout>(mux21, {}, &stats);
 
     std::cout << "PROCESSING ORTHO "<< std::endl;
     std::cout << "Size: " <<(stats.x_size) * (stats.y_size) << std::endl;
@@ -166,36 +167,35 @@ TEST_CASE("New Ortho maj_TEST", "[ortho-testing]")
     using gate_layout = gate_level_layout<clocked_layout<tile_based_layout<cartesian_layout<offset::ucoord_t>>>>;
     //cube::coord_t
 
-    auto mux21 = blueprints::b11_opt<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
-    mux21.set_network_name("mux21");
+    auto mux21 = blueprints::i99t_b01<mockturtle::names_view<mockturtle::sequential<technology_network>>>();
+    //mux21.set_network_name("mux21");
     orthogonal_physical_design_stats stats{};
 
     auto layout = orthogonal_sequential_network<gate_layout>(mux21, {}, &stats);
 
-    gate_level_drvs(layout);
+
 
     //print_gate_level_layout(std::cout, layout);
 
     fiction::debug::write_dot_layout(layout);
 
-    const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout);
+    /*const auto cell_level_lyt = apply_gate_library<qca_cell_clk_lyt, qca_one_library>(layout);
 
-    write_qca_layout_svg(cell_level_lyt, "TEST_maj_two_buf_cell_lvl_lyt.svg");
+    write_qca_layout_svg(cell_level_lyt, "TEST_maj_two_buf_cell_lvl_lyt.svg");*/
 
-    /*std::cout<<"clock number "<<layout.get_clock_number({6, 3, 0})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({7, 3, 0})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({7, 4, 0})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({7, 5, 0})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({7, 6, 0})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({6, 3, 1})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({7, 3, 1})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({7, 4, 1})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({7, 5, 1})<<std::endl;
-    std::cout<<"clock number "<<layout.get_clock_number({7, 6, 1})<<std::endl;*/
+    std::cout << "PROCESSING SEQ_NW "<< std::endl;
+    std::cout << "Size: " <<(stats.x_size) * (stats.y_size) << std::endl;
+    std::cout << "w: " <<(stats.x_size)<< std::endl;
+    std::cout << "h: " <<(stats.y_size) << std::endl;
+    std::cout << "Time: " << mockturtle::to_seconds(stats.time_total) << std::endl;
+    std::cout << "Num Gates: "  << stats.num_gates << std::endl;
+    std::cout << "Num Wires: " << stats.num_wires<< std::endl;
+
+    gate_level_drvs(layout);
 
 
     // network name
-    CHECK(layout.get_layout_name() == "mux21");
+    //CHECK(layout.get_layout_name() == "mux21");
 
     // PO names
     //CHECK(layout.get_output_name(0) == "f");

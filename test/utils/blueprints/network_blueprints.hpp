@@ -91,6 +91,26 @@ mockturtle::names_view<Ntk> maj4_network()
 }
 
 template <typename Ntk>
+mockturtle::names_view<Ntk> maj4_network_test()
+{
+    mockturtle::names_view<Ntk> ntk{};
+
+    const auto a = ntk.create_pi("a");
+    const auto b = ntk.create_pi("b");
+    const auto c = ntk.create_pi("c");
+    const auto d = ntk.create_pi("d");
+    const auto e = ntk.create_pi("e");
+
+    const auto m1 = ntk.create_maj(a, b, c);
+    const auto m4 = ntk.create_maj(m1, d, e);
+
+    ntk.create_po(m1, "m1");
+    ntk.create_po(m4, "m4");
+
+    return ntk;
+}
+
+template <typename Ntk>
 mockturtle::names_view<Ntk> unbalanced_and_inv_network()
 {
     mockturtle::names_view<Ntk> ntk{};
@@ -568,6 +588,29 @@ Ntk TEST_maj_one_buf()
     const auto m1 = ntk.create_maj(x1, x2, x3);
     const auto a1 = ntk.create_and(m1, x4);
 
+    ntk.create_po(a1, "f");
+
+    return ntk;
+}
+
+template <typename Ntk>
+Ntk TEST_maj_one_buf_final()
+{
+    Ntk ntk{};
+
+    const auto x1    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x0    = ntk.create_pi("0");
+    const auto x00    = ntk.create_pi("00");
+    const auto x4    = ntk.create_pi("d");
+
+    const auto m1 = ntk.create_maj(x1, x2, x3);
+    const auto a0 = ntk.create_and(x0, x00);
+    const auto a2 = ntk.create_and(a0, x4);
+    const auto a1 = ntk.create_and(m1, a2);
+
+    ntk.create_po(a0, "f");
     ntk.create_po(a1, "f");
 
     return ntk;
@@ -1164,142 +1207,6 @@ mockturtle::names_view<Ntk> majority()
     ntk.create_po(o, "cout");
 
 
-
-    return ntk;
-}
-
-template <typename Ntk>
-mockturtle::names_view<Ntk> random_1()
-{
-    mockturtle::names_view<Ntk> ntk{};
-    const auto n_1 = ntk.create_pi("n_1");
-    const auto n_2 = ntk.create_pi("n_2");
-    const auto n_3 = ntk.create_pi("n_3");
-    const auto n_4 = ntk.create_or(n_1, n_3);
-    const auto n_5 = ntk.create_maj(n_1, n_2, n_4);
-    const auto n_6 = ntk.create_or(n_3, n_5);
-    const auto n_2i = ntk.create_not(n_2);
-    const auto n_7 = ntk.create_maj(n_1, n_2i, n_6);
-    const auto n_8 = ntk.create_maj(n_1, n_4, n_7);
-    const auto n_9 = ntk.create_maj(n_2, n_5, n_6);
-    const auto n_9i = ntk.create_not(n_9);
-    const auto n_10 = ntk.create_maj(n_3, n_5, n_9i);
-    const auto n_11 = ntk.create_and(n_2, n_10);
-    const auto n_12 = ntk.create_and(n_2, n_7);
-    const auto n_13 = ntk.create_or(n_11, n_12);
-    ntk.create_po(n_8, "po0");
-    ntk.create_po(n_13, "po1");
-
-    return ntk;
-}
-
-template <typename Ntk>
-mockturtle::names_view<Ntk> random_2()
-{
-    mockturtle::names_view<Ntk> ntk{};
-    const auto n_1 = ntk.create_pi("n_1");
-    const auto n_2 = ntk.create_pi("n_2");
-    const auto n_3 = ntk.create_pi("n_3");
-    const auto n_4 = ntk.create_pi("n_4");
-    const auto n_4i = ntk.create_not(n_4);
-    const auto n_5 = ntk.create_maj(n_2, n_3, n_4i);
-    const auto n_5i = ntk.create_not(n_5);
-    const auto n_6 = ntk.create_maj(n_1, n_2, n_5i);
-    const auto n_7 = ntk.create_and(n_2, n_3);
-    const auto n_7i = ntk.create_not(n_7);
-    const auto n_8 = ntk.create_maj(n_1, n_5, n_7i);
-    const auto n_8i = ntk.create_not(n_8);
-    const auto n_9 = ntk.create_and(n_7, n_8i);
-    const auto n_10 = ntk.create_maj(n_2, n_3, n_8);
-    const auto n_11 = ntk.create_maj(n_1, n_5i, n_10);
-    const auto n_12 = ntk.create_maj(n_4, n_9, n_11);
-    const auto n_13 = ntk.create_maj(n_1, n_5i, n_8);
-    const auto n_14 = ntk.create_maj(n_1, n_4, n_13);
-    ntk.create_po(n_10, "po0");
-    ntk.create_po(n_12, "po1");
-    ntk.create_po(n_14, "po2");
-
-    return ntk;
-}
-
-template <typename Ntk>
-mockturtle::names_view<Ntk> random_3()
-{
-    mockturtle::names_view<Ntk> ntk{};
-    const auto n_1 = ntk.create_pi("n_1");
-    const auto n_2 = ntk.create_pi("n_2");
-    const auto n_3 = ntk.create_pi("n_3");
-    const auto n_4 = ntk.create_pi("n_4");
-    const auto n_5 = ntk.create_pi("n_5");
-    const auto n_6 = ntk.create_pi("n_6");
-    const auto n_5i = ntk.create_not(n_5);
-    const auto n_7 = ntk.create_maj(n_1, n_5i, n_6);
-    const auto n_7i = ntk.create_not(n_7);
-    const auto n_8 = ntk.create_maj(n_1, n_5, n_7i);
-    const auto n_9 = ntk.create_or(n_4, n_7);
-    const auto n_8i = ntk.create_not(n_8);
-    const auto n_10 = ntk.create_maj(n_4, n_6, n_8i);
-    const auto n_10i = ntk.create_not(n_10);
-    const auto n_11 = ntk.create_maj(n_1, n_5, n_10i);
-    const auto n_12 = ntk.create_maj(n_2, n_9, n_11);
-    const auto n_6i = ntk.create_not(n_6);
-    const auto n_13 = ntk.create_maj(n_3, n_4, n_6i);
-    const auto n_13i = ntk.create_not(n_13);
-    const auto n_14 = ntk.create_and(n_8, n_13i);
-    const auto n_15 = ntk.create_maj(n_1, n_3, n_4);
-    const auto n_16 = ntk.create_maj(n_1, n_7, n_11);
-    const auto n_15i = ntk.create_not(n_15);
-    const auto n_17 = ntk.create_maj(n_10, n_15i, n_16);
-    const auto n_18 = ntk.create_and(n_9, n_14);
-    const auto n_19 = ntk.create_maj(n_4, n_14, n_18);
-    const auto n_20 = ntk.create_or(n_17, n_19);
-    const auto n_21 = ntk.create_maj(n_6, n_13, n_18);
-    const auto n_21i = ntk.create_not(n_21);
-    const auto n_22 = ntk.create_maj(n_14, n_20, n_21i);
-    const auto n_12i = ntk.create_not(n_12);
-    const auto n_23 = ntk.create_maj(n_8, n_12i, n_22);
-    const auto n_9i = ntk.create_not(n_9);
-    const auto n_24 = ntk.create_and(n_8, n_9i);
-    const auto n_24i = ntk.create_not(n_24);
-    const auto n_25 = ntk.create_maj(n_12, n_16, n_24i);
-    const auto n_26 = ntk.create_maj(n_10, n_24, n_25);
-    const auto n_27 = ntk.create_maj(n_17, n_20, n_26);
-    const auto n_28 = ntk.create_and(n_12, n_15);
-    const auto n_29 = ntk.create_maj(n_8, n_13, n_18);
-    const auto n_29i = ntk.create_not(n_29);
-    const auto n_30 = ntk.create_maj(n_19, n_28, n_29i);
-    const auto n_31 = ntk.create_maj(n_6, n_14, n_29);
-    const auto n_20i = ntk.create_not(n_20);
-    const auto n_32 = ntk.create_maj(n_4, n_14, n_20i);
-    const auto n_33 = ntk.create_maj(n_11, n_17, n_24i);
-    const auto n_34 = ntk.create_or(n_9, n_10);
-    const auto n_35 = ntk.create_and(n_4, n_14);
-    const auto n_36 = ntk.create_maj(n_5, n_17, n_35);
-    const auto n_34i = ntk.create_not(n_34);
-    const auto n_37 = ntk.create_maj(n_26, n_34i, n_36);
-    const auto n_38 = ntk.create_maj(n_26, n_28, n_34i);
-    const auto n_38i = ntk.create_not(n_38);
-    const auto n_39 = ntk.create_maj(n_15, n_24, n_38i);
-    const auto n_40 = ntk.create_or(n_11, n_34);
-    const auto n_40i = ntk.create_not(n_40);
-    const auto n_41 = ntk.create_and(n_34, n_40i);
-    const auto n_42 = ntk.create_maj(n_18, n_35, n_41);
-    const auto n_39i = ntk.create_not(n_39);
-    const auto n_43 = ntk.create_maj(n_38, n_39i, n_42);
-    const auto n_44 = ntk.create_maj(n_2, n_18, n_21);
-    const auto n_45 = ntk.create_maj(n_20, n_21i, n_41);
-    const auto n_46 = ntk.create_maj(n_15, n_21, n_41);
-    ntk.create_po(n_23, "po0");
-    ntk.create_po(n_27, "po1");
-    ntk.create_po(n_30, "po2");
-    ntk.create_po(n_31, "po3");
-    ntk.create_po(n_32, "po4");
-    ntk.create_po(n_33, "po5");
-    ntk.create_po(n_37, "po6");
-    ntk.create_po(n_43, "po7");
-    ntk.create_po(n_44, "po8");
-    ntk.create_po(n_45, "po9");
-    ntk.create_po(n_46, "po10");
 
     return ntk;
 }

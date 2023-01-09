@@ -94,7 +94,7 @@ template <typename Lyt, typename Ntk>
     ntk.foreach_ro(
         [&lyt, &ntk, &ro_map](const auto& ro)
         {
-            std::cout<<"Ro wird erstellt"<<std::endl;
+            //std::cout<<"Ro wird erstellt"<<std::endl;
             std::string ro_name{};
 
             if constexpr (mockturtle::has_has_name_v<Ntk> && mockturtle::has_get_name_v<Ntk>)
