@@ -911,6 +911,53 @@ Ntk onebitAdderAOIG()
 }
 
 template <typename Ntk>
+Ntk onebitAdderAOIG_test()
+{
+    Ntk ntk{};
+    const auto x1    = ntk.create_pi("a");
+    const auto x11    = ntk.create_pi("a");
+    const auto x2    = ntk.create_pi("b");
+    const auto x22    = ntk.create_pi("b");
+    const auto x3    = ntk.create_pi("c");
+    const auto x33    = ntk.create_pi("c");
+
+    const auto o1 = ntk.create_or(x2, x3);
+    const auto a1 = ntk.create_and(x2, x3);
+
+    const auto n1    = ntk.create_not(a1);
+
+    const auto a2 = ntk.create_and(o1, n1);
+    const auto o2 = ntk.create_or(x1, a2);
+    const auto a3 = ntk.create_and(x1, a2);
+
+    const auto n2    = ntk.create_not(a3);
+
+    const auto a4 = ntk.create_and(o2, a3);
+    const auto o3 = ntk.create_or(x2, a4);
+
+    const auto out1    = ntk.create_not(x11);
+    const auto out2    = ntk.create_not(x22);
+    const auto out3    = ntk.create_not(x33);
+
+    const auto out11    = ntk.create_not(out1);
+    const auto out22    = ntk.create_not(out2);
+    const auto out33    = ntk.create_not(out3);
+
+    ntk.create_po(a4, "f");
+    ntk.create_po(o3, "g");
+    ntk.create_po(x11, "1");
+    ntk.create_po(x22, "2");
+    ntk.create_po(x33, "3");
+    ntk.create_po(out1, "n1");
+    ntk.create_po(out11, "n1");
+    ntk.create_po(out22, "n2");
+    ntk.create_po(out33, "n3");
+
+
+    return ntk;
+}
+
+template <typename Ntk>
 Ntk onebitAdderMajority()
 {
     Ntk ntk{};
