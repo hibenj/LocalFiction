@@ -2174,6 +2174,7 @@ class orthogonal_new_impl
 
                             }
                             layout.resize({latest_pos.x + 1 + (num_ris-1)*4, latest_pos.y-1 + (num_ris)*2, 1});
+                            
                             /***********************************************************End: Place Ris***************************************************************/
                             /*std::cout << n << "RI plaziert auf"
                                       << "X:" << ri_tile.x << "Y:" << ri_tile.y << std::endl;*/
